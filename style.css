@@ -23,3 +23,66 @@ main[data-view=edit] #itemSearch{background:#fff;border-color:#d6d3cc}main[data-
 /* Integrated design foundations and category controls */
 :root{--paper:#fcfbf8;--ink:#171614;--surface:#fff;--line:#e2e0d9;--secondary:#55534e;--selected:#eae7e1;--radius:18px;--gap:12px;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}
 h1{font-size:26px;line-height:1.45;letter-spacing:0}button,input{font-size:15px}.gallery .scene{border-color:var(--line);border-radius:var(--radius);background:var(--surface)}.gallery-preview{height:110px;margin-bottom:14px}.gallery-preview span{font-size:11px;padding:5px 7px;border-color:var(--line);background:var(--surface);border-radius:8px}.gallery-preview span:nth-child(1){top:8px;left:0}.gallery-preview span:nth-child(2){top:25px;right:0}.gallery-preview span:nth-child(3){top:54px;left:6px}.gallery-preview span:nth-child(4){top:74px;right:0}.gallery h2{font-size:19px;font-weight:500}#create{background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:14px}.categories{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:16px 0;overscroll-behavior-x:contain}.categories button{flex:none;background:transparent;border:1px solid var(--line);white-space:nowrap;font-size:13px;min-height:44px}.categories button[aria-pressed=true]{background:var(--selected);border-color:transparent}.library-group h3{font-size:13px;font-weight:500;color:var(--secondary);margin:16px 0 0}.library-group .library{margin:12px 0 24px!important}main[data-view=edit] #library button[aria-pressed=true]{background:var(--selected);border-color:transparent;color:var(--ink)}.item-card,.item-card:nth-child(n){border-color:var(--line);background:var(--surface)}
+/* Compact viewport surfaces: scroll content, keep actions reachable. */
+main[data-view=check],main[data-view=edit]{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding: max(10px,env(safe-area-inset-top)) 18px max(10px,env(safe-area-inset-bottom));gap:6px}
+main[data-view=check]>.back,main[data-view=edit]>.back{flex:none;padding:0;min-height:44px}main[data-view=check]>h1,main[data-view=edit]>h1{margin:0;font-size:24px}main[data-view=check]>p,main[data-view=edit]>p{margin:0;font-size:13px}main[data-view=check]>.eyebrow{display:none}
+.board-scroll{flex:1;min-height:100px;overflow:auto;overscroll-behavior:contain;margin-top:6px}#board{min-height:0;margin:0;width:100%}
+.item-card,.item-card:nth-child(n),.item-card:nth-child(n):hover,.item-card:nth-child(n):active{min-height:52px;height:auto;padding:12px 14px;border-radius:16px;font-size:15px;line-height:1.5}
+.cat-head{width:28%;height:auto;top:auto;bottom:calc(100% - 4px);left:50%;object-fit:contain;mix-blend-mode:normal}
+main[data-view=check] .status{flex:none;min-height:32px;margin:0;font-size:15px}main[data-view=check] #tempDetails{margin:0;flex:none;max-height:160px;overflow:auto}main[data-view=check] #tempDetails summary{padding:10px 0}main[data-view=check] .actions{flex:none}main[data-view=check]>.hint{display:none}#tempDetails .library{margin:6px 0}#tempDetails label{margin:4px 0}
+#forgetDialog .forget-header{padding:10px 16px 0}#forgetDialog h2{font-size:24px;margin:2px 0 8px}#forgetDialog .forget-header p{margin:4px 0 8px}#forgetDialog .forget-node{font-size:13px}#forgetDialog .forget-node span{width:68%}#forgetBoard{min-height:0}#forgetDialog .forget-footer{padding:8px 16px max(10px,env(safe-area-inset-bottom))}#forgetDialog .forget-footer button{margin-top:6px}
+main[data-view=edit]>p{display:none}main[data-view=edit]>label{margin:0}main[data-view=edit]>input{padding:8px 12px;min-height:44px}main[data-view=edit] .panel{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;margin:2px 0;gap:4px}main[data-view=edit] .panel h2{font-size:16px}main[data-view=edit] .edit-guide{display:none}main[data-view=edit] .selected-items{flex:none;max-height:62px;overflow:auto;margin:0!important;padding:2px 0}main[data-view=edit] .library button{padding:9px 12px;min-height:44px}main[data-view=edit] .panel label{margin:0;font-size:12px}main[data-view=edit] .panel input{min-height:44px;padding:8px 12px}main[data-view=edit] #library{flex:1;min-height:50px;overflow-y:auto;overscroll-behavior:contain}main[data-view=edit] #saveScene{margin:0;min-height:46px;flex:none}main[data-view=edit] #deleteScene{min-height:44px;margin:0;padding:8px}#editNotice:empty{display:none}#editNotice{margin:0;font-size:12px}
+.categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;overflow:visible;padding:2px 0;flex:none}.categories button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;padding:4px;min-height:48px;white-space:normal;border:1px solid transparent;border-radius:10px}.categories button[aria-pressed=true],#allCategories[aria-expanded=true]{background:var(--selected)}
+#categoryPanel{position:absolute;left:0;right:0;top:0;bottom:0;z-index:5;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:auto;padding:10px}#categoryPanel[hidden]{display:none}.category-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.category-options button{min-height:44px;font-size:13px;padding:10px 6px;border:1px solid var(--line);background:var(--surface)}.category-options button[aria-pressed=true]{background:var(--selected)}.current-category{margin:0;font-size:12px;color:var(--secondary)}
+@media(min-width:700px){main[data-view=check],main[data-view=edit]{height:calc(100dvh - 56px)}}
+main[data-view=edit] .selected-items{max-height:52px}
+/* Hide native scrollbar chrome, without disabling scrolling or keyboard access. */
+*,*::before,*::after{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+*::-webkit-scrollbar-button{display:none;width:0;height:0}
+main[data-view=check]{overflow:clip}
+main[data-view=check]>*{min-width:0;max-width:100%;flex-shrink:0}
+main[data-view=check]>.board-scroll{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:clip}
+.board-stage{position:relative;width:100%;min-width:0;flex:none}
+#board{max-width:none;min-width:0;position:relative}
+.board-scroll:focus-visible{outline:1px solid var(--line);outline-offset:-1px}
+main[data-view=check] h1,main[data-view=check]>.notice{overflow-wrap:anywhere}
+main[data-view=edit] .panel,#library,#selectedItems,#categoryPanel,#forgetScroll{min-width:0}
+.board-stage{overflow:clip}
+/* Independent, intentionally quiet completion surface. */
+main[data-view=complete]{height:100dvh;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
+.completion{width:100%;text-align:center}.completion h1{font-size:30px;margin:14px 0}.completion h1:focus{outline:none}.completion p{margin:8px 0}.greeting-slot{width:140px;height:120px;margin:28px auto 36px}.completion button{max-width:280px;min-height:48px}.completion .hint{margin-top:14px}
+@media(min-width:700px){main[data-view=complete]{height:calc(100dvh - 56px)}}
+/* Home keeps the latest departure reachable while only the gallery scrolls. */
+main[data-view=home]{height:100dvh;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:clip;padding:max(14px,env(safe-area-inset-top)) 18px max(12px,env(safe-area-inset-bottom))}
+main[data-view=home]>*{min-width:0;max-width:100%;flex:none}main[data-view=home]>.eyebrow{margin:0}main[data-view=home]>h1{margin:0}main[data-view=home]>.intro{margin:0;font-size:13px;line-height:1.6}
+.recent-departure{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.recent-departure>div{min-width:0}.recent-departure p{font-size:12px;margin:0 0 4px}.recent-departure h2{font-size:17px;overflow-wrap:anywhere}.recent-departure time{display:block;font-size:12px;color:var(--secondary);margin-top:4px}.recent-departure button{flex:none;min-height:44px;padding:10px 12px;font-size:13px;background:var(--paper);border:1px solid var(--line)}
+.scene-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.scene-section-heading h2{font-size:18px}.scene-section-heading #create{width:auto;margin:0;padding:10px 12px;font-size:13px;min-height:44px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+main[data-view=home]>.gallery-scroll{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:clip;overscroll-behavior:contain;padding:3px}.gallery-scroll .gallery{align-content:start}.gallery-scroll:focus-visible{outline:1px solid var(--line);outline-offset:-1px}
+@media(min-width:700px){main[data-view=home]{height:calc(100dvh - 56px)}}
+/* Edit content flows vertically; the add entry belongs to the item flow. */
+main[data-view=edit]{height:auto;min-height:100dvh;display:block;overflow-x:clip;overflow-y:visible;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+main[data-view=edit]>h1{margin:8px 0 12px}main[data-view=edit]>label{margin:18px 0 8px}main[data-view=edit] .panel{display:block;margin:28px 0 22px}
+main[data-view=edit] .panel h2{margin:24px 0 12px}main[data-view=edit] .selected-items{max-height:none;overflow:visible;margin:12px 0 24px!important}
+main[data-view=edit] #library{overflow:visible;min-height:0}main[data-view=edit] #categoryPanel{position:static;max-height:none;margin:8px 0}main[data-view=edit] #categoryPanel[hidden]{display:none}
+main[data-view=edit] #saveScene{margin-top:12px}main[data-view=edit] #deleteScene{margin-top:8px}main[data-view=edit] #library .custom-plus{display:flex;align-items:center;justify-content:center;min-width:60px;min-height:44px;padding:9px 16px;font-size:22px;line-height:1;background:var(--surface);border:1px solid var(--line);border-radius:13px;color:var(--ink)}
+#customItemDialog{background:var(--paper);padding:24px;width:calc(100% - 32px);max-width:370px;max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid var(--line);border-radius:20px}#customItemDialog h2{font-size:21px}#customItemDialog label{margin:18px 0 8px}#customItemDialog .actions{margin-top:20px;justify-content:flex-end}#customItemDialog .actions button{min-width:76px}#customItemDialog input{width:100%}
+/* Inline categories and global search reuse the existing item/tag components. */
+main[data-view=edit] .category-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+main[data-view=edit] .category-options button{min-width:0;max-width:100%;min-height:52px;padding:8px 4px;font-size:12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;border-radius:12px}
+main[data-view=edit] .category-options .category-plus{font-size:22px;background:var(--surface)}
+main[data-view=edit] .search-results button{display:flex;flex-direction:column;gap:2px}main[data-view=edit] .search-results small{font-size:11px;color:var(--secondary);font-weight:400}
+#customItemError{font-size:13px;color:var(--secondary);margin:10px 0 0}#customItemError:empty{display:none}
+/* Match the existing shortcut icons without changing navigation geometry. */
+main[data-view=edit] .category-options button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;padding:3px;text-align:center}
+.category-options .category-icon{display:block;flex:none;width:16px;height:16px;color:var(--ink)}
+.category-options .category-label{display:block;width:100%;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+main[data-view=edit] .category-options .category-plus{font-size:22px}
+
+main[data-view=edit] .category-options{gap:6px}
+/* Reusable ID-bound artwork label; category icons and preview miniatures stay unchanged. */
+.item-content{display:inline-flex;align-items:center;justify-content:center;gap:8px;max-width:100%;min-width:0;vertical-align:middle}
+.item-illustration{display:block;flex:0 0 25.92px;width:25.92px;height:25.92px;object-fit:contain;pointer-events:none}
+.item-name{min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.item-card .item-content{width:100%;gap:8px}.item-card .item-illustration{width:30.24px;height:30.24px;flex-basis:30.24px}
+main[data-view=edit] .library .item-content{text-align:left}
