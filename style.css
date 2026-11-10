@@ -68,7 +68,7 @@ main[data-view=edit] #library{overflow:visible;min-height:0}main[data-view=edit]
 main[data-view=edit] #saveScene{margin-top:12px}main[data-view=edit] #deleteScene{margin-top:8px}main[data-view=edit] #library .custom-plus{display:flex;align-items:center;justify-content:center;min-width:60px;min-height:44px;padding:9px 16px;font-size:22px;line-height:1;background:var(--surface);border:1px solid var(--line);border-radius:13px;color:var(--ink)}
 #customItemDialog{background:var(--paper);padding:24px;width:calc(100% - 32px);max-width:370px;max-height:calc(100dvh - 32px);overflow-y:auto;border:1px solid var(--line);border-radius:20px}#customItemDialog h2{font-size:21px}#customItemDialog label{margin:18px 0 8px}#customItemDialog .actions{margin-top:20px;justify-content:flex-end}#customItemDialog .actions button{min-width:76px}#customItemDialog input{width:100%}
 /* Inline categories and global search reuse the existing item/tag components. */
-main[data-view=edit] .category-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+main[data-view=edit] .category-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 main[data-view=edit] .category-options button{min-width:0;max-width:100%;min-height:52px;padding:8px 4px;font-size:12px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;border-radius:12px}
 main[data-view=edit] .category-options .category-plus{font-size:22px;background:var(--surface)}
 main[data-view=edit] .search-results button{display:flex;flex-direction:column;gap:2px}main[data-view=edit] .search-results small{font-size:11px;color:var(--secondary);font-weight:400}
@@ -82,7 +82,7 @@ main[data-view=edit] .category-options .category-plus{font-size:22px}
 main[data-view=edit] .category-options{gap:6px}
 /* Reusable ID-bound artwork label; category icons and preview miniatures stay unchanged. */
 .item-content{display:inline-flex;align-items:center;justify-content:center;gap:8px;max-width:100%;min-width:0;vertical-align:middle}
-.item-illustration{display:block;flex:0 0 25.92px;width:25.92px;height:25.92px;object-fit:contain;pointer-events:none}
+.item-illustration{display:block;flex:0 0 27.9936px;width:27.9936px;height:27.9936px;object-fit:contain;pointer-events:none}
 .item-name{min-width:0;overflow-wrap:anywhere;line-height:1.5}
-.item-card .item-content{width:100%;gap:8px}.item-card .item-illustration{width:30.24px;height:30.24px;flex-basis:30.24px}
+.item-card .item-content{width:100%;gap:8px}.item-card .item-illustration{width:32.6592px;height:32.6592px;flex-basis:32.6592px}
 main[data-view=edit] .library .item-content{text-align:left}
