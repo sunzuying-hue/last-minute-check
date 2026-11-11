@@ -24,21 +24,181 @@ function latestDeparture(){return departures().reduce((latest,r)=>!latest||Date.
 function recentMarkup(){const r=latestDeparture();if(!r)return '';const date=new Date(r.completedAt),time=Number.isFinite(date.getTime())?date.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'时间未记录';return `<section class="recent-departure" aria-label="最近一次出门"><div><p>最近一次出门</p><h2>${esc(r.sceneName)}</h2><time datetime="${esc(r.completedAt)}">${esc(time)}</time></div><button id="recentForget">记录遗漏</button></section>`}
 function clearCompletionTimers(){clearTimeout(completionPending);clearTimeout(returnTimer);completionPending=null;returnTimer=null}
 window.addEventListener('pagehide',clearCompletionTimers);
-function home(){clearCompletionTimers();checkRecordId=null;checkSnapshot=null;view='home';active=null;temporary=[];confirmed.clear();app.dataset.view=view;app.innerHTML=`<div class="eyebrow">出门前最后一分钟</div><h1>要出门了吗？</h1><p class="intro">猫猫陪你，再看一眼。<br>轻点场景出门，长按卡片编辑。</p>${recentMarkup()}<div class="scene-section-heading"><h2>选择场景</h2><button id="create">新增场景</button></div><div class="gallery-scroll" tabindex="0" role="region" aria-label="场景画廊，可上下滚动"><div class="gallery">${data.scenes.map(s=>`<button class="scene" data-scene="${s.id}" aria-label="${esc(s.name)}，点击检查，长按或按 E 编辑"><div class="gallery-preview" aria-hidden="true">${s.items.slice(0,4).map(id=>`<span data-preview="${id}">${esc(name(id))}</span>`).join('')}</div><div class="scene-heading"><h2>${esc(s.name)}</h2><span class="item-count">${s.items.length} 件</span></div></button>`).join('')}</div></div>`;const recent=document.querySelector('#recentForget');if(recent)recent.onclick=()=>openForget(latestDeparture().recordId);
-app.querySelectorAll('[data-scene]').forEach(b=>{let timer,start,held=false,moved=false;const cancel=()=>{clearTimeout(timer);b.classList.remove('holding')};b.onpointerdown=e=>{if(e.button!==0)return;held=false;moved=false;start={x:e.clientX,y:e.clientY};b.classList.add('holding');timer=setTimeout(()=>{held=true;cancel();edit(b.dataset.scene)},600)};b.onpointermove=e=>{if(start&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>10){moved=true;cancel()}};b.onpointerup=cancel;b.onpointercancel=()=>{moved=true;cancel()};b.onpointerleave=cancel;b.oncontextmenu=e=>e.preventDefault();b.onclick=()=>{cancel();if(!held&&!moved&&!transitioning)expandScene(b)};b.onkeydown=e=>{if(e.key.toLowerCase()==='e'){e.preventDefault();cancel();edit(b.dataset.scene)}}});document.querySelector('#create').onclick=()=>edit()}
-function edit(id){clearCompletionTimers();category='全部';query='';view='edit';temporary=[];const s=data.scenes.find(s=>s.id===id);draft=s?{...s,items:[...s.items],misses:{...s.misses}}:{id:uid(),name:'',items:[],misses:{}};renderEdit()}
-function renderEdit(){app.dataset.view=view;app.innerHTML=`<button class="back" id="back">〈 场景</button><h1>${data.scenes.some(s=>s.id===draft.id)?'编辑场景':'创建场景'}</h1><p>把需要带上的，放进这个场景。</p><label for="sceneName">场景名称</label><input id="sceneName" maxlength="60" value="${esc(draft.name)}" placeholder="例如：上课"><section class="panel"><h2 id="selectedHeading">已添加 · ${draft.items.length}</h2><p class="hint edit-guide">轻点物品以添加或移除</p><div class="library selected-items" id="selectedItems">${draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>'}</div><h2>物品库</h2><label for="itemSearch">搜索物品</label><input type="search" id="itemSearch" placeholder="搜索物品"><nav class="categories" aria-label="常用分类">${[['随身基础','随身','M8 8V6a4 4 0 0 1 8 0v2 M5 8h14v12H5z'],['数码电子','数码','M4 4h16v12H4z M2 20h20'],['学习用品','学习','M3 4h8l1 2 1-2h8v15h-8l-1 2-1-2H3z'],['panel','全部分类','M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z']].map(([c,t,path])=>`<button type="button" ${c==='panel'?'id="allCategories" aria-expanded="false" aria-controls="categoryPanel"':`data-category="${c}" aria-pressed="false"`}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="${path}"/></svg><span>${t}</span></button>`).join('')}</nav><div id="categoryPanel" hidden><div class="category-options" id="categoryOptions"></div></div><p class="current-category" id="currentCategory">全部</p><div id="library"></div><p id="editNotice" role="status"></p></section><button class="primary full" id="saveScene">完成</button>${data.scenes.some(s=>s.id===draft.id)?'<button class="full" id="deleteScene">删除场景</button>':''}`;
-document.querySelector('#back').onclick=home;document.querySelector('#sceneName').oninput=e=>draft.name=e.target.value;function syncItems(){
- const selected=document.querySelector('#selectedItems');
- document.querySelector('#selectedHeading').textContent=`已添加 · ${draft.items.length}`;
- selected.innerHTML=draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>';
- selected.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{draft.items=draft.items.filter(id=>id!==b.dataset.remove);syncItems()});
- library(document.querySelector('#itemSearch').value.trim());
+function home(){openSceneId=null;clearCompletionTimers();checkRecordId=null;checkSnapshot=null;view='home';active=null;temporary=[];confirmed.clear();app.dataset.view=view;app.innerHTML=`<div class="eyebrow">出门前最后一分钟</div><h1>要出门了吗？</h1><p class="intro">猫猫陪你，再看一眼。<br>轻点场景出门，长按卡片编辑。</p>${recentMarkup()}<div class="scene-section-heading"><h2>选择场景</h2></div><div class="gallery-scroll" tabindex="0" role="region" aria-label="场景画廊，可上下滚动"><div class="gallery">${data.scenes.map(s=>`<div class="scene-shell" data-scene-id="${esc(s.id)}"><button class="scene" data-scene="${esc(s.id)}" aria-label="${esc(s.name)}，点击检查，长按或按 E 编辑，左滑、右键或按 Delete 展开删除"><div class="gallery-preview" aria-hidden="true">${s.items.slice(0,4).map(id=>`<span data-preview="${id}">${esc(name(id))}</span>`).join('')}</div><div class="scene-heading"><h2>${esc(s.name)}</h2><span class="item-count">${s.items.length} 件</span></div></button><button type="button" class="scene-trash" aria-label="删除${esc(s.name)}" disabled><img src="assets/scene-trash.png" alt=""></button></div>`).join('')}
+<button id="create" class="scene scene-create" type="button">
+  <div class="gallery-preview" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <div class="scene-heading"><h2><span aria-hidden="true">＋</span> 新增场景</h2></div>
+</button></div></div>`;const recent=document.querySelector('#recentForget');if(recent)recent.onclick=()=>openForget(latestDeparture().recordId);
+ app.querySelectorAll('.scene-shell').forEach(bindSceneGesture);
+ document.querySelector('#create').onclick=()=>edit();
 }
-let categoriesOpen=false,searchRestore=null,entryKind='item',entryCategory=null;
-const customDialog=document.querySelector('#customItemDialog'),customInput=document.querySelector('#customItemName');
-function updateNavigation(){const searching=!!query;document.querySelector('#categoryPanel').hidden=searching||!categoriesOpen;document.querySelector('#allCategories').setAttribute('aria-expanded',String(!searching&&categoriesOpen));app.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-pressed',String(!searching&&b.dataset.category===category)));document.querySelector('#currentCategory').textContent=searching?'搜索结果':category}
-function selectCategory(c){if(query){document.querySelector('#itemSearch').value='';library('')}category=c;library('')}
+
+let openSceneId = null;
+const sceneDeleteDialog = document.querySelector('#sceneDeleteDialog');
+let pendingSceneDeleteId = null;
+let deleteReturnFocus = null;
+let deleteBackdropPressed = false;
+function revealSceneAction(id) {
+  openSceneId = id;
+  for (const shell of app.querySelectorAll('.scene-shell')) {
+    const isOpen = shell.dataset.sceneId === id;
+    shell.toggleAttribute('data-open', isOpen);
+    shell.querySelector('.scene-trash').disabled = !isOpen;
+  }
+}
+
+document.addEventListener('pointerdown', event => {
+  if (!sceneDeleteDialog.open && view === 'home' && openSceneId && event.target.closest('.scene-shell')?.dataset.sceneId !== openSceneId) {
+    revealSceneAction(null);
+  }
+});
+
+function deleteScene(id) {
+  const scene = data.scenes.find(item => item.id === id);
+  if (!scene || sceneDeleteDialog.open) return;
+  pendingSceneDeleteId = id;
+  deleteReturnFocus = [...app.querySelectorAll('[data-scene]')].find(card => card.dataset.scene === id);
+  document.querySelector('#sceneDeleteTitle').textContent = `删除「${scene.name}」？`;
+  document.documentElement.classList.add('scene-delete-modal-open');
+  sceneDeleteDialog.showModal();
+  document.querySelector('#cancelSceneDelete').focus();
+}
+
+document.querySelector('#cancelSceneDelete').onclick = () => sceneDeleteDialog.close();
+document.querySelector('#confirmSceneDelete').onclick = () => {
+  if (!sceneDeleteDialog.open || !pendingSceneDeleteId) return;
+  const id = pendingSceneDeleteId;
+  const scene = data.scenes.find(item => item.id === id);
+  if (!scene) {
+    sceneDeleteDialog.close();
+    return;
+  }
+  const next = {
+    ...data,
+    archivedMisses: {...data.archivedMisses, [id]: {...scene.misses}},
+    scenes: data.scenes.filter(item => item.id !== id),
+  };
+  if (persist(next)) {
+    sceneDeleteDialog.close();
+    home();
+  }
+};
+
+sceneDeleteDialog.addEventListener('close', () => {
+  pendingSceneDeleteId = null;
+  deleteBackdropPressed = false;
+  document.documentElement.classList.remove('scene-delete-modal-open');
+  revealSceneAction(null);
+  const target = deleteReturnFocus?.isConnected ? deleteReturnFocus : app.querySelector('[data-scene], #create');
+  target?.focus({preventScroll: true});
+  deleteReturnFocus = null;
+});
+
+function isDeleteBackdrop(event) {
+  const bounds = sceneDeleteDialog.getBoundingClientRect();
+  return event.target === sceneDeleteDialog && (
+    event.clientX < bounds.left || event.clientX > bounds.right ||
+    event.clientY < bounds.top || event.clientY > bounds.bottom
+  );
+}
+sceneDeleteDialog.onpointerdown = event => {
+  deleteBackdropPressed = isDeleteBackdrop(event);
+};
+sceneDeleteDialog.onpointerup = event => {
+  if (deleteBackdropPressed && isDeleteBackdrop(event)) sceneDeleteDialog.close();
+  deleteBackdropPressed = false;
+};
+
+function bindSceneGesture(shell) {
+  const card = shell.querySelector('.scene');
+  const trash = shell.querySelector('.scene-trash');
+  const id = shell.dataset.sceneId;
+  let gesture = null;
+  let holdTimer;
+  let suppressClick = false;
+
+  function cancelHold() {
+    clearTimeout(holdTimer);
+    card.classList.remove('holding');
+  }
+
+  card.onpointerdown = event => {
+    if (event.button !== 0 || !event.isPrimary) return;
+    suppressClick = false;
+    gesture = {pointer: event.pointerId, x: event.clientX, y: event.clientY, axis: null, wasOpen: openSceneId === id};
+    card.setPointerCapture(event.pointerId);
+    if (gesture.wasOpen) return;
+    card.classList.add('holding');
+    holdTimer = setTimeout(() => {
+      suppressClick = true;
+      cancelHold();
+      edit(id);
+    }, 600);
+  };
+
+  card.onpointermove = event => {
+    if (!gesture || gesture.pointer !== event.pointerId) return;
+    const dx = event.clientX - gesture.x;
+    const dy = event.clientY - gesture.y;
+    if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) >= 10) {
+      cancelHold();
+      suppressClick = true;
+      if (Math.abs(dx) > Math.abs(dy) * 1.25) gesture.axis = 'x';
+      else if (Math.abs(dy) >= Math.abs(dx)) gesture.axis = 'y';
+    }
+    if (gesture.axis !== 'x') return;
+    const reveal = trash.getBoundingClientRect().width;
+    const offset = (gesture.wasOpen ? -reveal : 0) + dx;
+    shell.classList.add('scene-dragging');
+    card.style.setProperty('--scene-offset', `${Math.max(-reveal, Math.min(0, offset))}px`);
+  };
+
+  function finishGesture(event, cancelled) {
+    if (!gesture || gesture.pointer !== event.pointerId) return;
+    cancelHold();
+    if (cancelled) suppressClick = true;
+    const dx = event.clientX - gesture.x;
+    if (!cancelled && gesture.axis === 'x' && Math.abs(dx) >= 28) {
+      revealSceneAction(dx < 0 ? id : null);
+    }
+    gesture = null;
+    shell.classList.remove('scene-dragging');
+    card.style.removeProperty('--scene-offset');
+  }
+
+  card.onpointerup = event => finishGesture(event, false);
+  card.onpointercancel = event => finishGesture(event, true);
+  card.onlostpointercapture = event => finishGesture(event, true);
+  card.onclick = event => {
+    if ((suppressClick && event.detail !== 0) || transitioning) return;
+    if (openSceneId === id) revealSceneAction(null);
+    else expandScene(card);
+  };
+  card.oncontextmenu = event => {
+    event.preventDefault();
+    if (event.pointerType === 'touch') return;
+    revealSceneAction(id);
+  };
+  card.onkeydown = event => {
+    if (event.key.toLowerCase() === 'e') {
+      event.preventDefault();
+      edit(id);
+    }
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      revealSceneAction(id);
+      trash.focus();
+    }
+  };
+  shell.onkeydown = event => {
+    if (event.key === 'Escape' && openSceneId === id) {
+      revealSceneAction(null);
+      card.focus();
+    }
+  };
+  trash.onclick = () => deleteScene(id);
+}
+function edit(id){clearCompletionTimers();category='全部';query='';view='edit';temporary=[];const s=data.scenes.find(s=>s.id===id);draft=s?{...s,items:[...s.items],misses:{...s.misses}}:{id:uid(),name:'',items:[],misses:{}};renderEdit()}
 // Reuse shortcut geometry and its 18px / 1.4px SVG treatment.
 function categoryIcon(c){const paths={
 '全部':'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
@@ -55,6 +215,18 @@ function categoryIcon(c){const paths={
 '饮食购物':'M3 8h18l-2 12H5z M8 8l4-6 4 6 M9 11v6 M15 11v6',
 '特殊与临时':'M3 6h7l2 3h9v11H3z M12 12v5 M9.5 14.5h5'
 };const path=paths[c]||'M3 6h7l2 3h9v11H3z';return `<svg class="category-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false"><path d="${path}"/></svg>`}
+function renderEdit(){app.dataset.view=view;app.innerHTML=`<button class="back" id="back">〈 场景</button><h1>${data.scenes.some(s=>s.id===draft.id)?'编辑场景':'创建场景'}</h1><p>把需要带上的，放进这个场景。</p><label for="sceneName">场景名称</label><input id="sceneName" maxlength="60" value="${esc(draft.name)}" placeholder="例如：上课"><section class="panel"><h2 id="selectedHeading">已添加 · ${draft.items.length}</h2><p class="hint edit-guide">轻点物品以添加或移除</p><div class="library selected-items" id="selectedItems">${draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>'}</div><h2>物品库</h2><label for="itemSearch">搜索物品</label><input type="search" id="itemSearch" placeholder="搜索物品"><nav class="categories" aria-label="常用分类">${[['随身基础','随身','M8 8V6a4 4 0 0 1 8 0v2 M5 8h14v12H5z'],['数码电子','数码','M4 4h16v12H4z M2 20h20'],['学习用品','学习','M3 4h8l1 2 1-2h8v15h-8l-1 2-1-2H3z'],['panel','全部分类','M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z']].map(([c,t,path])=>`<button type="button" ${c==='panel'?'id="allCategories" aria-expanded="false" aria-controls="categoryPanel"':`data-category="${c}" aria-pressed="false"`}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="${path}"/></svg><span>${t}</span></button>`).join('')}</nav><div id="categoryPanel" hidden><div class="category-options" id="categoryOptions"></div></div><p class="current-category" id="currentCategory">全部</p><div id="library"></div><p id="editNotice" role="status"></p></section><button class="primary full" id="saveScene">完成</button>`;
+document.querySelector('#back').onclick=home;document.querySelector('#sceneName').oninput=e=>draft.name=e.target.value;function syncItems(){
+ const selected=document.querySelector('#selectedItems');
+ document.querySelector('#selectedHeading').textContent=`已添加 · ${draft.items.length}`;
+ selected.innerHTML=draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>';
+ selected.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{draft.items=draft.items.filter(id=>id!==b.dataset.remove);syncItems()});
+ library(document.querySelector('#itemSearch').value.trim());
+}
+let categoriesOpen=false,searchRestore=null,entryKind='item',entryCategory=null;
+const customDialog=document.querySelector('#customItemDialog'),customInput=document.querySelector('#customItemName');
+function updateNavigation(){const searching=!!query;document.querySelector('#categoryPanel').hidden=searching||!categoriesOpen;document.querySelector('#allCategories').setAttribute('aria-expanded',String(!searching&&categoriesOpen));app.querySelectorAll('[data-category]').forEach(b=>b.setAttribute('aria-pressed',String(!searching&&b.dataset.category===category)));document.querySelector('#currentCategory').textContent=searching?'搜索结果':category}
+function selectCategory(c){if(query){document.querySelector('#itemSearch').value='';library('')}category=c;library('')}
 function renderCategories(){const grid=document.querySelector('#categoryOptions');grid.innerHTML=allCategoryNames().map(c=>`<button type="button" data-category="${esc(c)}" aria-pressed="${c===category}">${categoryIcon(c)}<span class="category-label">${esc(c)}</span></button>`).join('')+'<button type="button" class="category-plus" id="addCustomCategory" aria-label="新增分类">＋</button>';grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>selectCategory(b.dataset.category));document.querySelector('#addCustomCategory').onclick=()=>openEntry('category');updateNavigation()}
 function openEntry(kind,c=null){entryKind=kind;entryCategory=c;customInput.value='';customInput.removeAttribute('aria-invalid');document.querySelector('#customItemTitle').textContent=kind==='category'?'添加分类':'添加物品';document.querySelector('#customItemDialog label').textContent=kind==='category'?'分类名称':'物品名称';document.querySelector('#customItemError').textContent='';document.querySelector('#confirmCustomItem').disabled=true;customDialog.showModal();customInput.focus()}
 function library(q=''){
@@ -80,13 +252,15 @@ document.querySelector('#customItemForm').onsubmit=e=>{e.preventDefault();if(!cu
  if(!item){const custom=(data.customCategories||[]).find(c=>c.name===entryCategory);item={id:uid(),name:n,category:entryCategory,categoryId:custom?.id||'builtin-'+categories.indexOf(entryCategory)};if(!persist({...data,library:[...data.library,item]}))return}
  if(!draft.items.includes(item.id))draft.items.push(item.id);customDialog.close();syncItems();document.querySelector('#editNotice').textContent='已添加物品。';
 };
-document.querySelector('#saveScene').onclick=()=>{if(!draft.name.trim()){document.querySelector('#editNotice').textContent='请输入场景名称。';return}const scene={...draft,name:draft.name.trim()};if(persist({...data,scenes:data.scenes.some(s=>s.id===scene.id)?data.scenes.map(s=>s.id===scene.id?scene:s):[...data.scenes,scene]}))home()};const del=document.querySelector('#deleteScene');if(del)del.onclick=()=>{if(confirm(`删除「${draft.name}」及其遗漏记录？`)&&persist({...data,archivedMisses:{...data.archivedMisses,[draft.id]:{...data.scenes.find(s=>s.id===draft.id)?.misses}},scenes:data.scenes.filter(s=>s.id!==draft.id)}))home()}}
-function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,items:active.items.map(id=>({id,name:name(id)}))};view='check';app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`<button class="back" id="back">〈 场景</button><div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><div class="status" role="status" id="status"></div><details id="tempDetails"><summary>＋ 临时物品</summary><label for="tempName">仅本次检查使用</label><form id="tempForm" class="input-row"><input id="tempName" maxlength="60" required placeholder="输入临时物品名称"><button>添加</button></form><p id="tempNotice" role="status"></p><div id="tempList" class="library"></div></details><div class="actions"><button id="forget">记录遗漏</button><button id="restart">重新开始检查</button></div><p id="notice" class="notice" role="status"></p><p class="hint">猫猫会记住曾经漏带的物品，下次陪你多看一眼。</p>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#forget').disabled=!active.items.length;document.querySelector('#forget').onclick=openForget;active.items.forEach(addCard);document.querySelector('#tempForm').onsubmit=e=>{e.preventDefault();const input=document.querySelector('#tempName'),n=input.value.trim();if(!n)return;if([...active.items,...temporary.map(i=>i.id)].some(id=>name(id).normalize('NFKC').toLowerCase()===n.normalize('NFKC').toLowerCase())){document.querySelector('#tempNotice').textContent='这件物品已在本次检查中。';return}const item={id:'temp-'+uid(),name:n};temporary.push(item);addCard(item.id);input.value='';document.querySelector('#tempNotice').textContent='';renderTemporary();layout(true);status()};layout();status()}
+document.querySelector('#saveScene').onclick=()=>{if(!draft.name.trim()){document.querySelector('#editNotice').textContent='请输入场景名称。';return}const scene={...draft,name:draft.name.trim()};if(persist({...data,scenes:data.scenes.some(s=>s.id===scene.id)?data.scenes.map(s=>s.id===scene.id?scene:s):[...data.scenes,scene]}))home()}}
+const greetingImage = new Image();
+const greetingSource = "assets/cat-greeting.png";
+function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,items:active.items.map(id=>({id,name:name(id)}))};view='check';app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`<button class="back" id="back">〈 场景</button><div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><div class="status" role="status" id="status"></div><details id="tempDetails"><summary>＋ 临时物品</summary><label for="tempName">仅本次检查使用</label><form id="tempForm" class="input-row"><input id="tempName" maxlength="60" required placeholder="输入临时物品名称"><button>添加</button></form><p id="tempNotice" role="status"></p><div id="tempList" class="library"></div></details><div class="actions"><button id="forget">记录遗漏</button><button id="restart">重新开始检查</button></div><p id="notice" class="notice" role="status"></p><p class="hint">猫猫会记住曾经漏带的物品，下次陪你多看一眼。</p>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#forget').disabled=!active.items.length;document.querySelector('#forget').onclick=openForget;active.items.forEach(addCard);document.querySelector('#tempForm').onsubmit=e=>{e.preventDefault();const input=document.querySelector('#tempName'),n=input.value.trim();if(!n)return;if([...active.items,...temporary.map(i=>i.id)].some(id=>name(id).normalize('NFKC').toLowerCase()===n.normalize('NFKC').toLowerCase())){document.querySelector('#tempNotice').textContent='这件物品已在本次检查中。';return}const item={id:'temp-'+uid(),name:n};temporary.push(item);addCard(item.id);input.value='';document.querySelector('#tempNotice').textContent='';renderTemporary();layout(true);status()};layout();status()}
 function addCard(id){const b=document.createElement('button');b.className='item-card';b.dataset.item=id;b.setAttribute('aria-pressed','false');b.innerHTML=(entryCounts[id]>0?'<img class="cat-head" src="assets/cat-peek.svg" alt="猫猫提醒，曾经漏带">':'')+itemLabel(id);b.onclick=()=>{confirmed.has(id)?confirmed.delete(id):confirmed.add(id);b.classList.toggle('confirmed',confirmed.has(id));b.setAttribute('aria-pressed',String(confirmed.has(id)));status()};document.querySelector('#board').append(b)}
 function renderTemporary(){const list=document.querySelector('#tempList');list.innerHTML=temporary.map(i=>`<button data-temp="${i.id}">移除 ${esc(i.name)} ×</button>`).join('');list.querySelectorAll('[data-temp]').forEach(b=>b.onclick=()=>{temporary=temporary.filter(i=>i.id!==b.dataset.temp);confirmed.delete(b.dataset.temp);document.querySelector(`[data-item="${b.dataset.temp}"]`).remove();renderTemporary();layout(true);status()})}
 function status(){if(view!=='check')return;clearTimeout(completionPending);completionPending=null;const total=active.items.length+temporary.length;document.querySelector('#status').textContent=total?`已确认 ${confirmed.size} / ${total} 件`:'还没有物品，添加一件再检查吧。';
 if(total&&confirmed.size===total)completionPending=setTimeout(showComplete,180)}
-function showComplete(){if(view!=='check'||!active||!confirmed.size||confirmed.size!==active.items.length+temporary.length)return;clearCompletionTimers();if(!departures().some(r=>r.recordId===checkRecordId)){const record={recordId:checkRecordId,...checkSnapshot,completedAt:new Date().toISOString(),missedItemIds:[]};if(!persist({...data,departures:[...departures(),record]}))return}if(dialog.open)dialog.close();view='complete';app.dataset.view=view;app.innerHTML=`<section class="completion" aria-labelledby="completeTitle"><p class="eyebrow">出门前最后一分钟</p><h1 id="completeTitle" tabindex="-1">可以出发了</h1><p>需要带的，都确认好了。</p><div class="greeting-slot" aria-hidden="true"></div><button class="primary full" id="completeHome">返回首页</button><p class="hint">稍后自动返回场景</p></section>`;document.querySelector('#completeHome').onclick=home;document.querySelector('#completeTitle').focus({preventScroll:true});returnTimer=setTimeout(()=>{if(view==='complete')home()},1600)}
+function showComplete(){if(view!=='check'||!active||!confirmed.size||confirmed.size!==active.items.length+temporary.length)return;clearCompletionTimers();if(!departures().some(r=>r.recordId===checkRecordId)){const record={recordId:checkRecordId,...checkSnapshot,completedAt:new Date().toISOString(),missedItemIds:[]};if(!persist({...data,departures:[...departures(),record]}))return}if(dialog.open)dialog.close();view='complete';app.dataset.view=view;app.innerHTML=`<section class="completion" aria-labelledby="completeTitle"><p class="eyebrow">出门前最后一分钟</p><h1 id="completeTitle" tabindex="-1">可以出发了</h1><p>需要带的，都确认好了。</p><img class="greeting-slot" src="${greetingSource}" alt="女孩和猫咪玩耍"><button class="primary full" id="completeHome">返回首页</button><p class="hint">稍后自动返回场景</p></section>`;document.querySelector('#completeHome').onclick=home;document.querySelector('#completeTitle').focus({preventScroll:true});returnTimer=setTimeout(()=>{if(view==='complete')home()},1600)}
 function hash(s){let n=0;for(const c of s)n=(n*31+c.charCodeAt(0))>>>0;return n}
 // Base dimensions are independent of item count; board transform is the single page factor k.
 function layout(preserve=false){
@@ -131,16 +305,21 @@ function openForget(recordId){
  if(!record&&!active)return;
  forgetContext=record?{recordId:record.recordId,sceneId:record.sceneId,sceneName:record.sceneName,items:Array.isArray(record.items)?record.items:[]}:{recordId:null,sceneId:active.id,sceneName:active.name,items:active.items.map(id=>({id,name:name(id)}))};
  forgotten=new Set((record?.missedItemIds||[]).filter(id=>forgetContext.items.some(i=>i.id===id)));
- const board=document.querySelector('#forgetBoard');board.replaceChildren(...forgetContext.items.map(item=>{const b=document.createElement('button');b.type='button';b.className='forget-node';b.dataset.id=item.id;b.setAttribute('aria-pressed',String(forgotten.has(item.id)));const span=document.createElement('span');span.textContent=item.name;b.append(span);b.onclick=()=>{forgotten.has(item.id)?forgotten.delete(item.id):forgotten.add(item.id);b.setAttribute('aria-pressed',String(forgotten.has(item.id)));updateForgotten()};return b}));
+ const board=document.querySelector('#forgetBoard');board.replaceChildren(...forgetContext.items.map(item=>{const b=document.createElement('button');b.type='button';b.className='forget-node';b.dataset.id=item.id;b.setAttribute('aria-pressed',String(forgotten.has(item.id)));const currentItem=data.library.find(i=>i.id===item.id);
+ if(currentItem)bindItemIllustration(currentItem);
+ const src=illustrationById.get(item.id);
+ const artwork=src?`<img class="forget-illustration" ${window.itemArtwork?window.itemArtwork.prepare(src):`src="${src}"`} width="48" height="48" alt="" aria-hidden="true" decoding="async">`:categoryIcon('');
+ b.setAttribute('aria-label',item.name);
+ b.innerHTML=`<div class="forget-content"><div class="forget-art" aria-hidden="true">${artwork}</div><span class="forget-name">${esc(item.name)}</span></div>`;b.onclick=()=>{forgotten.has(item.id)?forgotten.delete(item.id):forgotten.add(item.id);b.setAttribute('aria-pressed',String(forgotten.has(item.id)));updateForgotten()};return b}));
  document.querySelector('#forgetScene').textContent=forgetContext.sceneName;
  document.querySelector('#forgetDialog .back').textContent=record?'〈 返回首页':'〈 返回检查';document.querySelector('#recordForget').textContent=record?'保存记录':'确认记录';
  updateForgotten();dialog.showModal();document.querySelector('#forgetScroll').scrollTop=0;layoutForgotten();
 }
 function updateForgotten(){document.querySelector('#forgetCount').textContent=`已选择 ${forgotten.size} 件`;document.querySelector('#recordForget').disabled=!forgetContext?.recordId&&forgotten.size===0}
 function layoutForgotten(){if(!dialog.open)return;const board=document.querySelector('#forgetBoard'),width=board.clientWidth,available=document.querySelector('#forgetScroll').clientHeight,placed=[];let bottom=0;
-const base=Math.max(60,Math.min(82,Math.sqrt(width*available/Math.max(1,board.children.length)*.58)));
-for(const b of board.children){const seed=hash(forgetContext.sceneId+b.dataset.id);let diameter=Math.min(width-8,base+seed%3*3);b.style.width=diameter+'px';b.style.height=diameter+'px';const label=b.firstElementChild;
-while(label.scrollHeight>diameter*.68&&diameter<width-8){diameter=Math.min(width-8,diameter+6);b.style.width=diameter+'px';b.style.height=diameter+'px'}
+const base=Math.max(80,Math.min(104,Math.sqrt(width*available/Math.max(1,board.children.length)*.58)));
+for(const b of board.children){const seed=hash(forgetContext.sceneId+b.dataset.id);let diameter=Math.min(width-8,base+seed%3*3);b.style.width=diameter+'px';b.style.height=diameter+'px';const label=b.querySelector('.forget-name');
+while((label.scrollHeight>parseFloat(getComputedStyle(label).lineHeight)*2+.5||b.firstElementChild.scrollHeight>diameter*.82)&&diameter<width-8){diameter=Math.min(width-8,diameter+6);b.style.width=diameter+'px';b.style.height=diameter+'px'}
 let found;const preferred=4+(seed%101)/100*Math.max(0,width-diameter-8);
 for(let y=8+seed%3*4;!found;y+=4){for(const x of [preferred,4,...Array.from({length:Math.ceil(width/6)},(_,i)=>4+i*6)]){if(x+diameter>width-4)continue;if(!placed.some(p=>Math.hypot(x+diameter/2-p.cx,y+diameter/2-p.cy)<diameter/2+p.r+8)){found={x,y,cx:x+diameter/2,cy:y+diameter/2,r:diameter/2};break}}}
 placed.push(found);b.style.left=found.x+'px';b.style.top=found.y+'px';bottom=Math.max(bottom,found.y+diameter)}
