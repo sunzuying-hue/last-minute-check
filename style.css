@@ -50,13 +50,91 @@ main[data-view=check] h1,main[data-view=check]>.notice{overflow-wrap:anywhere}
 main[data-view=edit] .panel,#library,#selectedItems,#categoryPanel,#forgetScroll{min-width:0}
 .board-stage{overflow:clip}
 /* Independent, intentionally quiet completion surface. */
-main[data-view=complete]{height:100dvh;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
-.completion{width:100%;text-align:center}.completion h1{font-size:30px;margin:14px 0}.completion h1:focus{outline:none}.completion p{margin:8px 0}.greeting-slot{display:block;width:min(240px,70vw);height:clamp(140px,32dvh,235px);margin:12px auto 20px;object-fit:contain}.completion button{max-width:280px;min-height:48px}.completion .hint{margin-top:14px}
+main[data-view=complete]{height:100dvh;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 24px max(16px,env(safe-area-inset-bottom))}
 @media(min-width:700px){main[data-view=complete]{height:calc(100dvh - 56px)}}
+.back.home-back {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.back.home-back:hover,
+.back.home-back:active { background: transparent; }
+.home-back::before {
+  content: "";
+  width: 32px;
+  height: 32px;
+  background: currentColor;
+  -webkit-mask: url("assets/home-handdrawn.png") center / contain no-repeat;
+  mask: url("assets/home-handdrawn.png") center / contain no-repeat;
+}
 /* Home keeps the latest departure reachable while only the gallery scrolls. */
 main[data-view=home]{height:100dvh;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:clip;padding:max(14px,env(safe-area-inset-top)) 18px max(12px,env(safe-area-inset-bottom))}
 main[data-view=home]>*{min-width:0;max-width:100%;flex:none}main[data-view=home]>.eyebrow{margin:0}main[data-view=home]>h1{margin:0}main[data-view=home]>.intro{margin:0;font-size:13px;line-height:1.6}
-.recent-departure{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.recent-departure>div{min-width:0}.recent-departure p{font-size:12px;margin:0 0 4px}.recent-departure h2{font-size:17px;overflow-wrap:anywhere}.recent-departure time{display:block;font-size:12px;color:var(--secondary);margin-top:4px}.recent-departure button{flex:none;min-height:44px;padding:10px 12px;font-size:13px;background:var(--paper);border:1px solid var(--line)}
+.recent-departure {
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8f5ef;
+}
+.recent-departure::before {
+  content: "";
+  height: 42px;
+  border-radius: 4px;
+  background: var(--departure-color);
+}
+.recent-departure p {
+  margin: 0 0 3px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--secondary);
+}
+.recent-departure h2 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: var(--weight-item);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-departure button,
+.home-guide button {
+  min-height: 44px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.home-guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.home-guide p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+.home-guide button { border-color: transparent; background: transparent; }
 .scene-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.scene-section-heading h2{font-size:18px}
 main[data-view=home]>.gallery-scroll{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:clip;overscroll-behavior:contain;padding:3px}.gallery-scroll .gallery{align-content:start}.gallery-scroll:focus-visible{outline:1px solid var(--line);outline-offset:-1px}
 @media(min-width:700px){main[data-view=home]{height:calc(100dvh - 56px)}}
@@ -80,18 +158,124 @@ main[data-view=edit] .category-options button{display:flex;flex-direction:column
 main[data-view=edit] .category-options .category-plus{font-size:22px}
 
 main[data-view=edit] .category-options{gap:6px}
-/* Reusable ID-bound artwork label; category icons and preview miniatures stay unchanged. */
+/* Reusable ID-bound artwork label. */
 .item-content{display:inline-flex;align-items:center;justify-content:center;gap:8px;max-width:100%;min-width:0;vertical-align:middle}
 .item-illustration{display:block;flex:0 0 27.9936px;width:27.9936px;height:27.9936px;object-fit:contain;pointer-events:none}
-.item-name{min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.item-name{min-width:0;overflow-wrap:anywhere;line-height:1.35}
 .item-card .item-content{width:100%;gap:8px}.item-card .item-illustration{width:32.6592px;height:32.6592px;flex-basis:32.6592px}
 main[data-view=edit] .library .item-content{text-align:left}
+.item-card .item-name {
+  font-size: var(--type-check-item);
+  font-weight: var(--weight-item);
+}
+main[data-view=edit] .library .item-name {
+  font-size: var(--type-edit-item);
+  font-weight: var(--weight-item);
+}
+main[data-view=edit] .categories button,
+main[data-view=edit] .category-label,
+main[data-view=edit] .current-category,
+main[data-view=edit] .library-group h3 {
+  font-size: var(--type-compact-item);
+  font-weight: var(--weight-item);
+}
 
+/* Gallery surfaces use the scene's persisted calico color. */
+main[data-view=home] {
+  --scene-create: #f7f3ec;
+  --scene-preview-fill: rgb(255 255 255 / 32%);
+  --scene-preview-outline: #cec2b2;
+}
+.gallery .scene-shell > .scene,
+.gallery .scene-create {
+  background: var(--scene-card-color, var(--scene-create));
+  border-color: transparent;
+}
+.gallery .scene-shell > .scene.holding {
+  background: var(--scene-card-color);
+  border-color: var(--secondary);
+}
+main[data-view=check] > h1::before {
+  content: "";
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-inline-end: 9px;
+  vertical-align: .12em;
+  border: 1px solid rgb(23 22 20 / 18%);
+  border-radius: 50%;
+  background: var(--check-scene-color, var(--selected));
+}
+main[data-view=check] .item-card,
+main[data-view=check] .item-card:hover,
+main[data-view=check] .item-card:active {
+  background: var(--check-scene-color, var(--selected));
+  border-color: rgb(23 22 20 / 9%);
+}
+main[data-view=check] .item-card.confirmed {
+  opacity: 1;
+  background: var(--selected);
+  background: color-mix(in srgb, var(--check-scene-color, var(--selected)) 48%, var(--paper));
+  border-color: rgb(23 22 20 / 15%);
+}
+main[data-view=check] .item-card.confirmed .item-content {
+  opacity: .7;
+}
+.gallery-preview { pointer-events: none; }
+.scene-shell .gallery-preview span {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  box-sizing: border-box;
+  width: 44%;
+  max-width: 68px;
+  height: 34px;
+  padding: 0 3px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.25;
+  border: 0;
+  background: var(--scene-preview-fill);
+}
+.scene-shell .gallery-preview img {
+  display: block;
+  width: 100%;
+  max-width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.scene-shell .gallery-preview:has(.preview-name) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  align-items: start;
+  gap: 8px;
+  height: auto;
+  min-height: 110px;
+  padding-top: 8px;
+}
+.scene-shell .gallery-preview:has(.preview-name) > span {
+  position: static;
+  width: 100%;
+  min-height: 34px;
+  height: auto;
+}
+.scene-shell .gallery-preview:has(.preview-name) > span:nth-child(even) {
+  justify-self: end;
+  margin-top: 12px;
+}
+.gallery-preview .preview-name {
+  min-width: 0;
+  padding-block: 4px;
+  font-size: var(--type-compact-item);
+  font-weight: var(--weight-item);
+}
 .gallery .scene-create .gallery-preview span {
   width: 38%;
   height: 25px;
   background: transparent;
-  pointer-events: none;
+  border-color: var(--scene-preview-outline);
 }
 .gallery .scene-create .scene-heading {
   justify-content: center;
@@ -107,6 +291,10 @@ main[data-view=edit] .library .item-content{text-align:left}
   --type-card-title: 20px;
   --type-body: 16px;
   --type-caption: 13px;
+  --type-check-item: clamp(18px, 4.875vw, 20px);
+  --type-edit-item: clamp(17px, 4.5vw, 18px);
+  --type-compact-item: clamp(14px, 3.75vw, 15px);
+  --weight-item: 500;
   --weight-display: 700;
   --weight-heading: 600;
 }
@@ -139,14 +327,62 @@ main[data-view=edit] .panel h2 {
   font-weight: var(--weight-heading);
   line-height: 1.25;
 }
+.completion {
+  --greeting-height: min(36dvh, 264px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.4dvh, 12px);
+  width: 100%;
+  text-align: center;
+}
+.completion p { margin: 0; }
 .completion h1 {
-  font-size: clamp(34px, 10.26vw, 40px);
-  font-weight: 700;
+  margin: 8px 0 7px;
+  font-size: clamp(38px, 10.26vw, 42px);
+  font-weight: var(--weight-heading);
   line-height: 1.12;
   letter-spacing: -.035em;
 }
-.completion > p:not(.eyebrow):not(.hint) {
+.completion h1:focus { outline: none; }
+.completion .completion-farewell {
+  color: var(--secondary);
   font-size: var(--type-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.greeting-slot {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: var(--greeting-height);
+  object-fit: contain;
+  /* Use part of the PNG's transparent margins as spacing around the artwork. */
+  margin-block: calc(var(--greeting-height) * -.14) calc(var(--greeting-height) * -.07);
+  pointer-events: none;
+}
+.completion .home-back {
+  --completion-return-scale: 1.2;
+  display: inline-flex;
+  justify-content: center;
+  gap: calc(3px * var(--completion-return-scale));
+  width: auto;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--secondary);
+  font-size: calc(var(--type-compact-item) * var(--completion-return-scale));
+}
+.completion .home-back::before {
+  width: calc(32px * var(--completion-return-scale));
+  height: calc(32px * var(--completion-return-scale));
+}
+.completion .completion-return-hint {
+  color: #77736d;
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .completion { animation: completion-fade 240ms ease-out both; }
+  @keyframes completion-fade { from { opacity: 0; } to { opacity: 1; } }
 }
 #forgetDialog h2 {
   font-size: var(--type-display);
@@ -163,14 +399,14 @@ main[data-view=edit] .panel h2 {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 82%;
+  width: 74%;
   pointer-events: none;
 }
 #forgetDialog .forget-art {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 61%;
+  width: min(61%, 48px);
   aspect-ratio: 1;
   flex: none;
 }
@@ -188,10 +424,10 @@ main[data-view=edit] .panel h2 {
 #forgetDialog .forget-node .forget-name {
   width: 100%;
   margin: 0;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: var(--type-compact-item);
+  font-weight: var(--weight-item);
   line-height: 1.25;
-  color: #77746e;
+  color: #69665f;
   overflow-wrap: anywhere;
   text-align: center;
 }

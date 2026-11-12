@@ -1,9 +1,31 @@
 'use strict';
 const KEY='last-minute-demo-v2', LEGACY='last-minute-demo-v1';
+const HOME_GUIDE_KEY='last-minute-home-guide-v1';
+const calicoPalette=Object.freeze({
+ cream:'#f3ebdd',
+ apricot:'#ebc5a7',
+ taupe:'#d1c9bf',
+ green:'#dce6d5',
+});
+const calicoColors=Object.values(calicoPalette);
+const legacySceneColors=[calicoPalette.cream,calicoPalette.apricot,calicoPalette.taupe];
+const initialScenes=[
+ {id:'class',name:'上课',items:['书本','笔记本','笔','电脑'],themeColor:calicoPalette.cream},
+ {id:'work',name:'工作',items:['电脑','手机','钥匙','工牌'],themeColor:calicoPalette.apricot},
+ {id:'travel',name:'旅行',items:['身份证','手机','充电器','衣物','洗漱用品'],themeColor:calicoPalette.taupe},
+ {id:'shanghai',name:'去上海',items:['身份证','手机','充电器','钥匙'],themeColor:calicoPalette.green},
+];
+function validSceneColor(value){
+ const color=typeof value==='string'?value.trim().toLowerCase():'';
+ return calicoColors.includes(color)?color:null;
+}
+function applyCheckTheme(scene){
+ app.style.setProperty('--check-scene-color',validSceneColor(scene.themeColor)||calicoPalette.cream);
+}
 const uid=()=>crypto.randomUUID();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function migrate(old){const names=[...new Set([...old.library,...old.scenes.flatMap(s=>s.items)])];const library=names.map(name=>({id:uid(),name}));const id=name=>library.find(i=>i.name===name).id;return {version:2,library,scenes:old.scenes.map(s=>({...s,items:[...new Set(s.items)].map(id),misses:Object.fromEntries(names.map(n=>[id(n),Math.max(0,Number(old.misses?.[s.id]?.[n])||0)]))}))}}
-function load(){try{const current=JSON.parse(localStorage.getItem(KEY));if(current?.version===2&&Array.isArray(current.library)&&Array.isArray(current.scenes))return current;const old=JSON.parse(localStorage.getItem(LEGACY));return migrate(old||{library:['书本','笔记本','笔','电脑','手机','钥匙','钱包','工牌','充电器','身份证','衣物','洗漱用品'],scenes:[{id:'class',name:'上课',items:['书本','笔记本','笔','电脑']},{id:'work',name:'工作',items:['电脑','手机','钥匙','工牌']},{id:'travel',name:'旅行',items:['身份证','手机','充电器','衣物','洗漱用品']}],misses:{}})}catch{return migrate({library:[],scenes:[]})}}
+function load(){try{const current=JSON.parse(localStorage.getItem(KEY));if(current?.version===2&&Array.isArray(current.library)&&Array.isArray(current.scenes))return current;const old=JSON.parse(localStorage.getItem(LEGACY));return migrate(old||{library:['钱包'],scenes:initialScenes,misses:{}})}catch{return migrate({library:[],scenes:[]})}}
 const categories=['全部','随身基础','数码电子','学习用品','工作办公','衣物配饰','洗护美容','健康个人护理','运动健身','旅行住宿','演出娱乐','饮食购物','特殊与临时'];
 const allCategoryNames=()=>[...categories,...(Array.isArray(data.customCategories)?data.customCategories:[]).map(c=>c.name)];
 const normalized=s=>s.normalize('NFKC').trim().toLowerCase();
@@ -21,14 +43,67 @@ function persist(next){try{localStorage.setItem(KEY,JSON.stringify(next));data=n
 let completionPending=null,returnTimer=null,checkRecordId=null,checkSnapshot=null;
 const departures=()=>Array.isArray(data.departures)?data.departures:[];
 function latestDeparture(){return departures().reduce((latest,r)=>!latest||Date.parse(r.completedAt)>Date.parse(latest.completedAt)?r:latest,null)}
-function recentMarkup(){const r=latestDeparture();if(!r)return '';const date=new Date(r.completedAt),time=Number.isFinite(date.getTime())?date.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'时间未记录';return `<section class="recent-departure" aria-label="最近一次出门"><div><p>最近一次出门</p><h2>${esc(r.sceneName)}</h2><time datetime="${esc(r.completedAt)}">${esc(time)}</time></div><button id="recentForget">记录遗漏</button></section>`}
+function recentMarkup(){
+ const record=latestDeparture();
+ if(!record)return '';
+ const date=new Date(record.completedAt);
+ const scene=data.scenes.find(scene=>scene.id===record.sceneId);
+ const color=validSceneColor(record.themeColor)||validSceneColor(scene?.themeColor)||calicoPalette.cream;
+ let time='时间未记录';
+ if(Number.isFinite(date.getTime())){
+  const day=date.toDateString()===new Date().toDateString()?'今天':date.toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+  const clock=date.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  time=`<time datetime="${esc(record.completedAt)}">${esc(day+clock)}</time>`;
+ }
+ return `<section class="recent-departure" aria-label="最近一次出门" style="--departure-color:${color}">
+  <div><p>最近一次出门 · ${time}</p><h2 title="${esc(record.sceneName)}">${esc(record.sceneName)}</h2></div>
+  <button id="recentForget" type="button">记录遗漏</button>
+ </section>`;
+}
+let homeGuideDone=false;
+try{homeGuideDone=localStorage.getItem(HOME_GUIDE_KEY)==='1'}catch{}
+function homeGuideMarkup(){
+ return !homeGuideDone&&data.scenes.length?`<aside class="home-guide" aria-label="场景操作提示"><p>轻点检查 · 长按编辑 · 左滑删除</p><button id="dismissHomeGuide" type="button">知道了</button></aside>`:'';
+}
+function dismissHomeGuide(){
+ const guide=app.querySelector('.home-guide');
+ if(!guide)return;
+ homeGuideDone=true;
+ guide.remove();
+ try{localStorage.setItem(HOME_GUIDE_KEY,'1')}catch{}
+}
+const homeBackButton='<button class="back home-back" id="back" type="button" aria-label="返回首页"></button>';
 function clearCompletionTimers(){clearTimeout(completionPending);clearTimeout(returnTimer);completionPending=null;returnTimer=null}
 window.addEventListener('pagehide',clearCompletionTimers);
-function home(){openSceneId=null;clearCompletionTimers();checkRecordId=null;checkSnapshot=null;view='home';active=null;temporary=[];confirmed.clear();app.dataset.view=view;app.innerHTML=`<div class="eyebrow">出门前最后一分钟</div><h1>要出门了吗？</h1><p class="intro">猫猫陪你，再看一眼。<br>轻点场景出门，长按卡片编辑。</p>${recentMarkup()}<div class="scene-section-heading"><h2>选择场景</h2></div><div class="gallery-scroll" tabindex="0" role="region" aria-label="场景画廊，可上下滚动"><div class="gallery">${data.scenes.map(s=>`<div class="scene-shell" data-scene-id="${esc(s.id)}"><button class="scene" data-scene="${esc(s.id)}" aria-label="${esc(s.name)}，点击检查，长按或按 E 编辑，左滑、右键或按 Delete 展开删除"><div class="gallery-preview" aria-hidden="true">${s.items.slice(0,4).map(id=>`<span data-preview="${id}">${esc(name(id))}</span>`).join('')}</div><div class="scene-heading"><h2>${esc(s.name)}</h2><span class="item-count">${s.items.length} 件</span></div></button><button type="button" class="scene-trash" aria-label="删除${esc(s.name)}" disabled><img src="assets/scene-trash.png" alt=""></button></div>`).join('')}
+window.addEventListener('pageshow',event=>{
+ if(event.persisted&&view==='complete')home();
+});
+function sceneCard(s){
+ const previewIds=s.items.slice(0,4);
+ const description=previewIds.length?`，预览物品：${previewIds.map(name).join('、')}`:'';
+ const preview=previewIds.map(id=>{
+  const src=illustrationById.get(id);
+  const label=esc(name(id));
+  const content=src?`<img ${window.itemArtwork?window.itemArtwork.prepare(src):`src="${src}"`} width="32" height="32" alt="" decoding="async" draggable="false">`:`<small class="preview-name">${label}</small>`;
+  return `<span data-preview="${esc(id)}">${content}</span>`;
+ }).join('');
+ return `<div class="scene-shell" data-scene-id="${esc(s.id)}" style="--scene-card-color:${validSceneColor(s.themeColor)||calicoPalette.cream}">
+  <button class="scene" data-scene="${esc(s.id)}" aria-label="${esc(s.name)}，${s.items.length} 件，点击检查，长按或按 E 编辑，左滑、右键或按 Delete 展开删除${esc(description)}">
+   <div class="gallery-preview" aria-hidden="true">${preview}</div>
+   <div class="scene-heading"><h2>${esc(s.name)}</h2><span class="item-count">${s.items.length} 件</span></div>
+  </button>
+  <button type="button" class="scene-trash" aria-label="删除${esc(s.name)}" disabled><img src="assets/scene-trash.png" alt=""></button>
+ </div>`;
+}
+function home(){openSceneId=null;clearCompletionTimers();checkRecordId=null;checkSnapshot=null;view='home';active=null;temporary=[];confirmed.clear();app.dataset.view=view;app.innerHTML=`<div class="eyebrow">出门前最后一分钟</div><h1>要出门了吗？</h1><p class="intro">猫猫陪你，再看一眼。</p>${recentMarkup()}<div class="scene-section-heading"><h2>选择场景</h2></div><div class="gallery-scroll" tabindex="0" role="region" aria-label="场景画廊，可上下滚动">${homeGuideMarkup()}<div class="gallery">${data.scenes.map(sceneCard).join('')}
 <button id="create" class="scene scene-create" type="button">
   <div class="gallery-preview" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <div class="scene-heading"><h2><span aria-hidden="true">＋</span> 新增场景</h2></div>
-</button></div></div>`;const recent=document.querySelector('#recentForget');if(recent)recent.onclick=()=>openForget(latestDeparture().recordId);
+</button></div></div>`;
+ const recent=app.querySelector('#recentForget');
+ if(recent)recent.onclick=()=>{dismissHomeGuide();openForget(latestDeparture().recordId)};
+ const guideButton=app.querySelector('#dismissHomeGuide');
+ if(guideButton)guideButton.onclick=()=>{dismissHomeGuide();app.querySelector('[data-scene]')?.focus({preventScroll:true})};
  app.querySelectorAll('.scene-shell').forEach(bindSceneGesture);
  document.querySelector('#create').onclick=()=>edit();
 }
@@ -198,7 +273,7 @@ function bindSceneGesture(shell) {
   };
   trash.onclick = () => deleteScene(id);
 }
-function edit(id){clearCompletionTimers();category='全部';query='';view='edit';temporary=[];const s=data.scenes.find(s=>s.id===id);draft=s?{...s,items:[...s.items],misses:{...s.misses}}:{id:uid(),name:'',items:[],misses:{}};renderEdit()}
+function edit(id){dismissHomeGuide();clearCompletionTimers();category='全部';query='';view='edit';temporary=[];const s=data.scenes.find(s=>s.id===id);draft=s?{...s,items:[...s.items],misses:{...s.misses}}:{id:uid(),name:'',items:[],misses:{}};renderEdit()}
 // Reuse shortcut geometry and its 18px / 1.4px SVG treatment.
 function categoryIcon(c){const paths={
 '全部':'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
@@ -215,7 +290,7 @@ function categoryIcon(c){const paths={
 '饮食购物':'M3 8h18l-2 12H5z M8 8l4-6 4 6 M9 11v6 M15 11v6',
 '特殊与临时':'M3 6h7l2 3h9v11H3z M12 12v5 M9.5 14.5h5'
 };const path=paths[c]||'M3 6h7l2 3h9v11H3z';return `<svg class="category-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" focusable="false"><path d="${path}"/></svg>`}
-function renderEdit(){app.dataset.view=view;app.innerHTML=`<button class="back" id="back">〈 场景</button><h1>${data.scenes.some(s=>s.id===draft.id)?'编辑场景':'创建场景'}</h1><p>把需要带上的，放进这个场景。</p><label for="sceneName">场景名称</label><input id="sceneName" maxlength="60" value="${esc(draft.name)}" placeholder="例如：上课"><section class="panel"><h2 id="selectedHeading">已添加 · ${draft.items.length}</h2><p class="hint edit-guide">轻点物品以添加或移除</p><div class="library selected-items" id="selectedItems">${draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>'}</div><h2>物品库</h2><label for="itemSearch">搜索物品</label><input type="search" id="itemSearch" placeholder="搜索物品"><nav class="categories" aria-label="常用分类">${[['随身基础','随身','M8 8V6a4 4 0 0 1 8 0v2 M5 8h14v12H5z'],['数码电子','数码','M4 4h16v12H4z M2 20h20'],['学习用品','学习','M3 4h8l1 2 1-2h8v15h-8l-1 2-1-2H3z'],['panel','全部分类','M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z']].map(([c,t,path])=>`<button type="button" ${c==='panel'?'id="allCategories" aria-expanded="false" aria-controls="categoryPanel"':`data-category="${c}" aria-pressed="false"`}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="${path}"/></svg><span>${t}</span></button>`).join('')}</nav><div id="categoryPanel" hidden><div class="category-options" id="categoryOptions"></div></div><p class="current-category" id="currentCategory">全部</p><div id="library"></div><p id="editNotice" role="status"></p></section><button class="primary full" id="saveScene">完成</button>`;
+function renderEdit(){app.dataset.view=view;app.innerHTML=`${homeBackButton}<h1>${data.scenes.some(s=>s.id===draft.id)?'编辑场景':'创建场景'}</h1><p>把需要带上的，放进这个场景。</p><label for="sceneName">场景名称</label><input id="sceneName" maxlength="60" value="${esc(draft.name)}" placeholder="例如：上课"><section class="panel"><h2 id="selectedHeading">已添加 · ${draft.items.length}</h2><p class="hint edit-guide">轻点物品以添加或移除</p><div class="library selected-items" id="selectedItems">${draft.items.map(id=>`<button data-remove="${id}" aria-label="移除${esc(name(id))}">${itemLabel(id)}</button>`).join('')||'<p class="hint">还没有物品，可在下方添加。</p>'}</div><h2>物品库</h2><label for="itemSearch">搜索物品</label><input type="search" id="itemSearch" placeholder="搜索物品"><nav class="categories" aria-label="常用分类">${[['随身基础','随身','M8 8V6a4 4 0 0 1 8 0v2 M5 8h14v12H5z'],['数码电子','数码','M4 4h16v12H4z M2 20h20'],['学习用品','学习','M3 4h8l1 2 1-2h8v15h-8l-1 2-1-2H3z'],['panel','全部分类','M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z']].map(([c,t,path])=>`<button type="button" ${c==='panel'?'id="allCategories" aria-expanded="false" aria-controls="categoryPanel"':`data-category="${c}" aria-pressed="false"`}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="${path}"/></svg><span>${t}</span></button>`).join('')}</nav><div id="categoryPanel" hidden><div class="category-options" id="categoryOptions"></div></div><p class="current-category" id="currentCategory">全部</p><div id="library"></div><p id="editNotice" role="status"></p></section><button class="primary full" id="saveScene">完成</button>`;
 document.querySelector('#back').onclick=home;document.querySelector('#sceneName').oninput=e=>draft.name=e.target.value;function syncItems(){
  const selected=document.querySelector('#selectedItems');
  document.querySelector('#selectedHeading').textContent=`已添加 · ${draft.items.length}`;
@@ -252,21 +327,55 @@ document.querySelector('#customItemForm').onsubmit=e=>{e.preventDefault();if(!cu
  if(!item){const custom=(data.customCategories||[]).find(c=>c.name===entryCategory);item={id:uid(),name:n,category:entryCategory,categoryId:custom?.id||'builtin-'+categories.indexOf(entryCategory)};if(!persist({...data,library:[...data.library,item]}))return}
  if(!draft.items.includes(item.id))draft.items.push(item.id);customDialog.close();syncItems();document.querySelector('#editNotice').textContent='已添加物品。';
 };
-document.querySelector('#saveScene').onclick=()=>{if(!draft.name.trim()){document.querySelector('#editNotice').textContent='请输入场景名称。';return}const scene={...draft,name:draft.name.trim()};if(persist({...data,scenes:data.scenes.some(s=>s.id===scene.id)?data.scenes.map(s=>s.id===scene.id?scene:s):[...data.scenes,scene]}))home()}}
+document.querySelector('#saveScene').onclick=()=>{
+ const name=draft.name.trim();
+ if(!name){document.querySelector('#editNotice').textContent='请输入场景名称。';return}
+ const existing=data.scenes.find(s=>s.id===draft.id);
+ const themeColor=existing?existing.themeColor:calicoColors[Math.floor(Math.random()*calicoColors.length)];
+ const scene={...draft,name,themeColor};
+ const scenes=existing?data.scenes.map(s=>s.id===scene.id?scene:s):[...data.scenes,scene];
+ if(persist({...data,scenes}))home();
+}}
 const greetingImage = new Image();
 const greetingSource = "assets/cat-greeting.png";
-function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,items:active.items.map(id=>({id,name:name(id)}))};view='check';app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`<button class="back" id="back">〈 场景</button><div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><div class="status" role="status" id="status"></div><details id="tempDetails"><summary>＋ 临时物品</summary><label for="tempName">仅本次检查使用</label><form id="tempForm" class="input-row"><input id="tempName" maxlength="60" required placeholder="输入临时物品名称"><button>添加</button></form><p id="tempNotice" role="status"></p><div id="tempList" class="library"></div></details><div class="actions"><button id="forget">记录遗漏</button><button id="restart">重新开始检查</button></div><p id="notice" class="notice" role="status"></p><p class="hint">猫猫会记住曾经漏带的物品，下次陪你多看一眼。</p>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#forget').disabled=!active.items.length;document.querySelector('#forget').onclick=openForget;active.items.forEach(addCard);document.querySelector('#tempForm').onsubmit=e=>{e.preventDefault();const input=document.querySelector('#tempName'),n=input.value.trim();if(!n)return;if([...active.items,...temporary.map(i=>i.id)].some(id=>name(id).normalize('NFKC').toLowerCase()===n.normalize('NFKC').toLowerCase())){document.querySelector('#tempNotice').textContent='这件物品已在本次检查中。';return}const item={id:'temp-'+uid(),name:n};temporary.push(item);addCard(item.id);input.value='';document.querySelector('#tempNotice').textContent='';renderTemporary();layout(true);status()};layout();status()}
+function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();dismissHomeGuide();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,themeColor:active.themeColor,items:active.items.map(id=>({id,name:name(id)}))};view='check';applyCheckTheme(active);app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`${homeBackButton}<div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><div class="status" role="status" id="status"></div><details id="tempDetails"><summary>＋ 临时物品</summary><label for="tempName">仅本次检查使用</label><form id="tempForm" class="input-row"><input id="tempName" maxlength="60" required placeholder="输入临时物品名称"><button>添加</button></form><p id="tempNotice" role="status"></p><div id="tempList" class="library"></div></details><div class="actions"><button id="forget">记录遗漏</button><button id="restart">重新开始检查</button></div><p id="notice" class="notice" role="status"></p><p class="hint">猫猫会记住曾经漏带的物品，下次陪你多看一眼。</p>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#forget').disabled=!active.items.length;document.querySelector('#forget').onclick=openForget;active.items.forEach(addCard);document.querySelector('#tempForm').onsubmit=e=>{e.preventDefault();const input=document.querySelector('#tempName'),n=input.value.trim();if(!n)return;if([...active.items,...temporary.map(i=>i.id)].some(id=>name(id).normalize('NFKC').toLowerCase()===n.normalize('NFKC').toLowerCase())){document.querySelector('#tempNotice').textContent='这件物品已在本次检查中。';return}const item={id:'temp-'+uid(),name:n};temporary.push(item);addCard(item.id);input.value='';document.querySelector('#tempNotice').textContent='';renderTemporary();layout(true);status()};layout();status()}
 function addCard(id){const b=document.createElement('button');b.className='item-card';b.dataset.item=id;b.setAttribute('aria-pressed','false');b.innerHTML=(entryCounts[id]>0?'<img class="cat-head" src="assets/cat-peek.svg" alt="猫猫提醒，曾经漏带">':'')+itemLabel(id);b.onclick=()=>{confirmed.has(id)?confirmed.delete(id):confirmed.add(id);b.classList.toggle('confirmed',confirmed.has(id));b.setAttribute('aria-pressed',String(confirmed.has(id)));status()};document.querySelector('#board').append(b)}
 function renderTemporary(){const list=document.querySelector('#tempList');list.innerHTML=temporary.map(i=>`<button data-temp="${i.id}">移除 ${esc(i.name)} ×</button>`).join('');list.querySelectorAll('[data-temp]').forEach(b=>b.onclick=()=>{temporary=temporary.filter(i=>i.id!==b.dataset.temp);confirmed.delete(b.dataset.temp);document.querySelector(`[data-item="${b.dataset.temp}"]`).remove();renderTemporary();layout(true);status()})}
 function status(){if(view!=='check')return;clearTimeout(completionPending);completionPending=null;const total=active.items.length+temporary.length;document.querySelector('#status').textContent=total?`已确认 ${confirmed.size} / ${total} 件`:'还没有物品，添加一件再检查吧。';
 if(total&&confirmed.size===total)completionPending=setTimeout(showComplete,180)}
-function showComplete(){if(view!=='check'||!active||!confirmed.size||confirmed.size!==active.items.length+temporary.length)return;clearCompletionTimers();if(!departures().some(r=>r.recordId===checkRecordId)){const record={recordId:checkRecordId,...checkSnapshot,completedAt:new Date().toISOString(),missedItemIds:[]};if(!persist({...data,departures:[...departures(),record]}))return}if(dialog.open)dialog.close();view='complete';app.dataset.view=view;app.innerHTML=`<section class="completion" aria-labelledby="completeTitle"><p class="eyebrow">出门前最后一分钟</p><h1 id="completeTitle" tabindex="-1">可以出发了</h1><p>需要带的，都确认好了。</p><img class="greeting-slot" src="${greetingSource}" alt="女孩和猫咪玩耍"><button class="primary full" id="completeHome">返回首页</button><p class="hint">稍后自动返回场景</p></section>`;document.querySelector('#completeHome').onclick=home;document.querySelector('#completeTitle').focus({preventScroll:true});returnTimer=setTimeout(()=>{if(view==='complete')home()},1600)}
+function showComplete(){
+ if(view!=='check'||!active||!confirmed.size||confirmed.size!==active.items.length+temporary.length)return;
+ clearCompletionTimers();
+ if(!departures().some(r=>r.recordId===checkRecordId)){
+  const record={recordId:checkRecordId,...checkSnapshot,completedAt:new Date().toISOString(),missedItemIds:[]};
+  if(!persist({...data,departures:[...departures(),record]}))return;
+ }
+ if(dialog.open)dialog.close();
+ view='complete';
+ app.dataset.view=view;
+ app.innerHTML=`<section class="completion" aria-labelledby="completeTitle">
+  <header>
+   <p class="eyebrow">出门前最后一分钟</p>
+   <h1 id="completeTitle" tabindex="-1">可以出发了</h1>
+   <p class="completion-farewell">一路顺风，回来见。</p>
+  </header>
+  <img class="greeting-slot" src="${greetingSource}" width="1122" height="1402" alt="女孩和猫咪玩耍">
+  <footer>
+   <button class="back home-back" id="completeHome" type="button">返回首页</button>
+   <p class="completion-return-hint">即将自动返回</p>
+  </footer>
+ </section>`;
+ app.querySelector('#completeHome').onclick=home;
+ app.querySelector('#completeTitle').focus({preventScroll:true});
+ returnTimer=setTimeout(()=>{if(view==='complete')home()},3000);
+}
 function hash(s){let n=0;for(const c of s)n=(n*31+c.charCodeAt(0))>>>0;return n}
 // Base dimensions are independent of item count; board transform is the single page factor k.
 function layout(preserve=false){
  if(view!=='check')return;
  const board=document.querySelector('#board'),region=board.closest('.board-scroll'),vw=region.clientWidth,vh=Math.max(80,region.clientHeight);
- const cards=[...board.children].map((el,index)=>{const id=el.dataset.item,seed=hash(active.id+id),base=.8*Math.min(220,Math.max(170+seed%4*12,name(id).length*15+32)),scale=1+(entryCounts[id]||0)*.05;
+ const cards=[...board.children].map((el,index)=>{const id=el.dataset.item,seed=hash(active.id+id),length=name(id).length,scale=1+(entryCounts[id]||0)*.05;
+ const base=Math.min(240,Math.max(136+seed%4*10,112+length*4));
  el.style.width=base+'px';el.style.transform=`scale(${scale})`;
  return {el,id,index,seed,scale,w:base*scale,h:el.offsetHeight*scale,cat:entryCounts[id]>0?base*.28*.7*scale:0};
  });
@@ -290,9 +399,9 @@ function layout(preserve=false){
  return {k,W,placed,bottom};
  }
  let result=null;
- if(preserve&&oldK<=widthFit+.001)result=pack(oldK,true,true);
- if(!result){for(const k of [1,.95,.9,.85].filter(k=>k<=widthFit+.001)){result=pack(k,false,false);if(result)break}}
- if(!result)result=pack(Math.min(.85,widthFit),true,false);
+ if(preserve&&oldK<=widthFit)result=pack(oldK,true,true);
+ if(!result){for(const k of [1,.95,.9].filter(k=>k<=widthFit)){result=pack(k,false,false);if(result)break}}
+ if(!result)result=pack(widthFit,true,false);
  if(!result)return;
  const {k,W,placed,bottom}=result;
  cards.forEach((c,i)=>{c.el._rect=placed[i];c.el.style.left=placed[i].x+'px';c.el.style.top=placed[i].y+c.cat+'px'});
@@ -312,14 +421,19 @@ function openForget(recordId){
  b.setAttribute('aria-label',item.name);
  b.innerHTML=`<div class="forget-content"><div class="forget-art" aria-hidden="true">${artwork}</div><span class="forget-name">${esc(item.name)}</span></div>`;b.onclick=()=>{forgotten.has(item.id)?forgotten.delete(item.id):forgotten.add(item.id);b.setAttribute('aria-pressed',String(forgotten.has(item.id)));updateForgotten()};return b}));
  document.querySelector('#forgetScene').textContent=forgetContext.sceneName;
- document.querySelector('#forgetDialog .back').textContent=record?'〈 返回首页':'〈 返回检查';document.querySelector('#recordForget').textContent=record?'保存记录':'确认记录';
+ const back=dialog.querySelector('.back');
+ back.classList.toggle('home-back',Boolean(record));
+ back.textContent=record?'':'〈 返回检查';
+ if(record)back.setAttribute('aria-label','返回首页');
+ else back.removeAttribute('aria-label');
+ document.querySelector('#recordForget').textContent=record?'保存记录':'确认记录';
  updateForgotten();dialog.showModal();document.querySelector('#forgetScroll').scrollTop=0;layoutForgotten();
 }
 function updateForgotten(){document.querySelector('#forgetCount').textContent=`已选择 ${forgotten.size} 件`;document.querySelector('#recordForget').disabled=!forgetContext?.recordId&&forgotten.size===0}
 function layoutForgotten(){if(!dialog.open)return;const board=document.querySelector('#forgetBoard'),width=board.clientWidth,available=document.querySelector('#forgetScroll').clientHeight,placed=[];let bottom=0;
 const base=Math.max(80,Math.min(104,Math.sqrt(width*available/Math.max(1,board.children.length)*.58)));
-for(const b of board.children){const seed=hash(forgetContext.sceneId+b.dataset.id);let diameter=Math.min(width-8,base+seed%3*3);b.style.width=diameter+'px';b.style.height=diameter+'px';const label=b.querySelector('.forget-name');
-while((label.scrollHeight>parseFloat(getComputedStyle(label).lineHeight)*2+.5||b.firstElementChild.scrollHeight>diameter*.82)&&diameter<width-8){diameter=Math.min(width-8,diameter+6);b.style.width=diameter+'px';b.style.height=diameter+'px'}
+for(const b of board.children){const seed=hash(forgetContext.sceneId+b.dataset.id);let diameter=Math.min(width-8,base+seed%3*3);b.style.width=diameter+'px';b.style.height=diameter+'px';
+while(b.firstElementChild.scrollHeight>diameter*.66&&diameter<width-8){diameter=Math.min(width-8,diameter+6);b.style.width=diameter+'px';b.style.height=diameter+'px'}
 let found;const preferred=4+(seed%101)/100*Math.max(0,width-diameter-8);
 for(let y=8+seed%3*4;!found;y+=4){for(const x of [preferred,4,...Array.from({length:Math.ceil(width/6)},(_,i)=>4+i*6)]){if(x+diameter>width-4)continue;if(!placed.some(p=>Math.hypot(x+diameter/2-p.cx,y+diameter/2-p.cy)<diameter/2+p.r+8)){found={x,y,cx:x+diameter/2,cy:y+diameter/2,r:diameter/2};break}}}
 placed.push(found);b.style.left=found.x+'px';b.style.top=found.y+'px';bottom=Math.max(bottom,found.y+diameter)}
@@ -357,13 +471,30 @@ const itemIllustrationAliases={
  '水壶':['运动健身','运动水壶']
 };
 function bindItemIllustration(item){const catalog=itemIllustrationCatalog[item.category]||{},alias=itemIllustrationAliases[item.name];const asset=Object.values(catalog).find(a=>a.key===item.illustrationKey)||catalog[item.name]||(alias&&itemIllustrationCatalog[alias[0]]?.[alias[1]]);if(asset){item.illustrationKey=asset.key;illustrationById.set(item.id,asset.src)}}
-// Populate the reusable library from approved illustration catalogs; never alter scene templates.
+// Populate the reusable library from approved illustration catalogs.
 for(const [category,assets] of Object.entries(itemIllustrationCatalog))for(const [name,asset] of Object.entries(assets)){
  let item=data.library.find(i=>i.category===category&&normalized(i.name)===normalized(name));
  if(!item){item={id:uid(),name,category,categoryId:'builtin-'+categories.indexOf(category)};data.library.push(item)}
  item.illustrationKey=asset.key;
 }
 for(const item of data.library)bindItemIllustration(item);
+if(!data.initialSceneColorsV1){
+ const shanghai=initialScenes.find(scene=>scene.id==='shanghai');
+ const hasLegacyDefaults=initialScenes.slice(0,3).every(template=>data.scenes.some(scene=>scene.id===template.id));
+ const hasShanghai=data.scenes.some(scene=>scene.id===shanghai.id||normalized(scene.name)===normalized(shanghai.name));
+ if(hasLegacyDefaults&&!hasShanghai&&!Object.hasOwn(data.archivedMisses||{},shanghai.id)){
+  const items=shanghai.items.map(name=>{
+   const category=categories[catalog.findIndex(group=>group.includes(name))+1];
+   return data.library.find(item=>item.name===name&&item.category===category)?.id;
+  }).filter(Boolean);
+  data.scenes.push({...shanghai,items,misses:{}});
+ }
+ data.initialSceneColorsV1=true;
+}
+data.scenes.forEach((scene,index)=>{
+ const template=initialScenes.find(template=>template.id===scene.id);
+ scene.themeColor=template?.themeColor||validSceneColor(scene.themeColor)||legacySceneColors[index%legacySceneColors.length];
+});
 persist(data);home();
 
 async function expandScene(scene){
