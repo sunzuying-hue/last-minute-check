@@ -20,10 +20,10 @@ const appThemes=Object.freeze({
 // Future theme-specific cat PNGs can be added here without changing scene color logic.
 const themeCatArtwork=Object.freeze({
   calico:{peek:'assets/cat-peek.svg',greeting:'assets/cat-greeting.png'},
-  british:{peek:'assets/cat-peek-british.png?v=2'},
-  golden:{peek:'assets/cat-peek-golden.png?v=2'},
-  tuxedo:{peek:'assets/cat-peek-tuxedo.png?v=2'},
-  maine:{peek:'assets/cat-peek-maine.png?v=2'}
+  british:{peek:'assets/cat-peek-british-384-5aa5986f5f.webp'},
+  golden:{peek:'assets/cat-peek-golden-384-de01d19d98.webp'},
+  tuxedo:{peek:'assets/cat-peek-tuxedo-384-47017d4aa4.webp'},
+  maine:{peek:'assets/cat-peek-maine-384-ef48e7ba2a.webp'}
 });
 function activeCatPeek(){return themeCatArtwork[activeThemeId]?.peek||themeCatArtwork.calico.peek}
 const allThemeColors=Object.values(appThemes).flatMap(theme=>theme.colors).map(color=>color.toLowerCase());
@@ -448,7 +448,10 @@ animatePage('forward');
 }
 const greetingImage = new Image();
 const greetingSource = "assets/cat-greeting.png";
-function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();dismissHomeGuide();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,themeColor:themeColor(active),items:active.items.map(id=>({id,name:name(id)}))};view='check';applyCheckTheme(active);app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`${homeBackButton}<div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><section class="check-controls" aria-label="检查操作"><div class="status" role="status" id="status"></div><div class="check-actions"><button id="openTempItems" class="temp-item-entry" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>临时物品</span><small id="tempCount" hidden></small></button><button id="restart" class="restart-check" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.2 6.2A6 6 0 1 1 4 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3.5 4v3.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>重新检查</span></button></div></section>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#openTempItems').onclick=openTempItems;active.items.forEach(addCard);renderTemporary();status();layout();checkResize.observe(app.querySelector('.board-scroll'));animatePage('forward')}
+let greetingPreloadHandle=null;
+function loadGreetingImage(){greetingPreloadHandle=null;if(!greetingImage.src){greetingImage.src=greetingSource;greetingImage.decode?.().catch(()=>{})}}
+function scheduleGreetingPreload(){if(greetingImage.src||greetingPreloadHandle!==null)return;greetingPreloadHandle='requestIdleCallback' in window?requestIdleCallback(loadGreetingImage,{timeout:900}):setTimeout(loadGreetingImage,0)}
+function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();dismissHomeGuide();checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,themeColor:themeColor(active),items:active.items.map(id=>({id,name:name(id)}))};view='check';applyCheckTheme(active);app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`${homeBackButton}<div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><section class="check-controls" aria-label="检查操作"><div class="status" role="status" id="status"></div><div class="check-actions"><button id="openTempItems" class="temp-item-entry" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>临时物品</span><small id="tempCount" hidden></small></button><button id="restart" class="restart-check" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.2 6.2A6 6 0 1 1 4 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3.5 4v3.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>重新检查</span></button></div></section>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#openTempItems').onclick=openTempItems;active.items.forEach(addCard);renderTemporary();status();layout();checkResize.observe(app.querySelector('.board-scroll'));animatePage('forward')}
 function addCard(id){const board=document.querySelector('#board'),b=document.createElement('button');b.className='item-card';b.dataset.item=id;b.style.setProperty('--item-enter-index',board.children.length);b.setAttribute('aria-pressed','false');b.innerHTML=(entryCounts[id]>0?`<img class="cat-head" src="${activeCatPeek()}" width="32" height="22.4" alt="" aria-hidden="true" onerror="this.onerror=null;this.src='${themeCatArtwork.calico.peek}'">`:'')+itemLabel(id);b.onclick=()=>{confirmed.has(id)?confirmed.delete(id):confirmed.add(id);b.classList.toggle('confirmed',confirmed.has(id));b.setAttribute('aria-pressed',String(confirmed.has(id)));status()};board.append(b)}
 function renderTemporary(){const badge=document.querySelector('#tempCount');if(badge){badge.textContent=temporary.length;badge.hidden=!temporary.length;document.querySelector('#openTempItems')?.setAttribute('aria-label',`临时物品${temporary.length?`，已添加 ${temporary.length} 件`:''}`)}if(tempItemDialog.open)renderTempLibrary()}
 let tempLibraryQuery='',tempDialogBackdropPressed=false;
@@ -477,6 +480,7 @@ themeDialog.addEventListener('pointerdown',event=>{themeDialogBackdropPressed=ev
 themeDialog.addEventListener('click',event=>{if(themeDialogBackdropPressed&&event.target===themeDialog)closeSheet(themeDialog);themeDialogBackdropPressed=false});
 [tempItemDialog,themeDialog].forEach(sheet=>sheet.addEventListener('cancel',event=>{event.preventDefault();closeSheet(sheet)}));
 function status(){if(view!=='check')return;clearTimeout(completionPending);completionPending=null;const ids=[...active.items,...temporary.map(item=>item.id)],total=ids.length,current=confirmed.size,statusElement=document.querySelector('#status');if(total<=12){statusElement.innerHTML=`<span>${total?`已确认 ${current} / ${total} 件`:'还没有物品，添加一件再检查吧。'}</span>${total?`<div class="check-progress" style="--progress-count:${total}" aria-hidden="true">${ids.map(id=>`<i${confirmed.has(id)?' data-complete':''}></i>`).join('')}</div>`:''}`}else{statusElement.innerHTML=`<span>已确认 ${current} / ${total} 件</span><div class="check-progress check-progress-continuous" aria-hidden="true"><i style="width:${current/total*100}%"></i></div>`}
+if(total&&current>=Math.max(1,total-1))scheduleGreetingPreload();
 if(total&&confirmed.size===total)completionPending=setTimeout(showComplete,180)}
 function showComplete(){
  if(view!=='check'||!active||!confirmed.size||confirmed.size!==active.items.length+temporary.length)return;
@@ -489,6 +493,7 @@ function showComplete(){
   if(historyWasEmptyAtBoot&&!historyGuideDone&&departures().length===1){historyGuidePending=true;writeStorage(HISTORY_GUIDE_PENDING_KEY,'1')}
  }
  if(dialog.open)dialog.close();
+ loadGreetingImage();
  view='complete';
  app.dataset.view=view;
  app.innerHTML=`<section class="completion" aria-labelledby="completeTitle">
@@ -497,7 +502,7 @@ function showComplete(){
    <h1 id="completeTitle" tabindex="-1">可以出发了</h1>
    <p class="completion-farewell">一路顺风，回来见。</p>
   </header>
-  <img class="greeting-slot" src="${greetingSource}" width="1122" height="1402" alt="女孩和猫咪玩耍">
+  <img class="greeting-slot" src="${greetingSource}" width="1122" height="1402" alt="女孩和猫咪玩耍" decoding="async">
   <footer>
    <button class="back home-back" id="completeHome" type="button">返回首页</button>
    <p class="completion-return-hint">即将自动返回</p>

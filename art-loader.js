@@ -5,7 +5,7 @@ const empty='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 const pending=new Map(),loaded=new Map();
 async function loadPack(url){if(pending.has(url))return pending.get(url);const work=(async()=>{
  let cache;try{if('caches' in window)cache=await caches.open('last-minute-item-art-v1')}catch{}
- let response=cache&&await cache.match(url);
+ let response;try{if('caches' in window)response=await caches.match(url)}catch{}
  if(!response){response=await fetch(url);if(!response.ok)throw Error('Artwork bundle '+response.status);if(cache)try{await cache.put(url,response.clone())}catch{}}
  const images=await response.json();for(const [src,value] of Object.entries(images))loaded.set(src,value);return images;
 })();pending.set(url,work);work.catch(()=>pending.delete(url));return work}

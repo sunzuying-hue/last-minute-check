@@ -720,3 +720,18 @@ main[data-view=edit] #library .custom-plus{
   main[data-view=edit] #library .custom-plus{min-height:72px;padding-inline:1px}
   main[data-view=edit] #library .item-name{font-size:10px}
 }
+.pwa-ready{
+  position:fixed;z-index:1200;left:50%;bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px));
+  max-width:calc(100% - 32px);padding:9px 14px;border:1px solid var(--line);border-radius:999px;
+  background:var(--paper);color:var(--secondary);font-size:12px;font-weight:500;line-height:1.4;
+  opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:opacity .2s ease,transform .2s ease;
+}
+.pwa-ready[data-visible=true]{opacity:1;transform:translate(-50%,0)}
+@media(display-mode:standalone){body{min-height:100dvh}main{overscroll-behavior-y:none}}
+/* iOS Safari/PWA zooms focused form fields when their computed text size is below 16px. */
+main[data-view=edit] #sceneName,
+main[data-view=edit] #itemSearch,
+#tempItemDialog #tempItemSearch,
+#tempItemDialog #tempItemName,
+#customItemDialog #customItemName,
+textarea{font-size:16px}
