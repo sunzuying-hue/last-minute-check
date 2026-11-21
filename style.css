@@ -21,14 +21,14 @@ main[data-view=edit] #itemSearch{background:#fff;border-color:#d6d3cc}main[data-
 #forgetDialog .forget-footer{flex:none;padding:12px 20px max(20px,env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid #e4e0d8}#forgetDialog .forget-footer p{text-align:center;font-size:13px;margin:0;color:var(--secondary)}#forgetDialog .forget-footer button{margin-top:12px;min-height:48px}#forgetDialog .forget-footer button:disabled{opacity:.35}
 @media(prefers-reduced-motion:reduce){main[data-view=edit] .library button,#forgetDialog .forget-node{transition:none}}
 /* Integrated design foundations and category controls */
-:root{--paper:#fcfbf8;--ink:#171614;--surface:#fff;--line:#e2e0d9;--secondary:#55534e;--selected:#eae7e1;--radius:18px;--gap:12px;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}
+:root{--paper:#fcfbf8;--ink:#171614;--surface:#fff;--line:#e2e0d9;--secondary:#55534e;--selected:#eae7e1;--radius:18px;--gap:12px;font-family:var(--font-sans)}
 h1{font-size:26px;line-height:1.45;letter-spacing:0}button,input{font-size:15px}.gallery .scene{border-color:var(--line);border-radius:var(--radius);background:var(--surface)}.gallery-preview{height:110px;margin-bottom:14px}.gallery-preview span{font-size:11px;padding:5px 7px;border-color:var(--line);background:var(--surface);border-radius:8px}.gallery-preview span:nth-child(1){top:8px;left:0}.gallery-preview span:nth-child(2){top:25px;right:0}.gallery-preview span:nth-child(3){top:54px;left:6px}.gallery-preview span:nth-child(4){top:74px;right:0}.gallery h2{font-size:19px;font-weight:500}.categories{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:16px 0;overscroll-behavior-x:contain}.categories button{flex:none;background:transparent;border:1px solid var(--line);white-space:nowrap;font-size:13px;min-height:44px}.categories button[aria-pressed=true]{background:var(--selected);border-color:transparent}.library-group h3{font-size:13px;font-weight:500;color:var(--secondary);margin:16px 0 0}.library-group .library{margin:12px 0 24px!important}main[data-view=edit] #library button[aria-pressed=true]{background:var(--selected);border-color:transparent;color:var(--ink)}.item-card,.item-card:nth-child(n){border-color:var(--line);background:var(--surface)}
 /* Compact viewport surfaces: scroll content, keep actions reachable. */
 main[data-view=check],main[data-view=edit]{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding: max(10px,env(safe-area-inset-top)) 18px max(10px,env(safe-area-inset-bottom));gap:6px}
 main[data-view=check]>.back,main[data-view=edit]>.back{flex:none;padding:0;min-height:44px}main[data-view=check]>h1,main[data-view=edit]>h1{margin:0;font-size:24px}main[data-view=check]>p,main[data-view=edit]>p{margin:0;font-size:13px}main[data-view=check]>.eyebrow{display:none}
 .board-scroll{flex:1;min-height:100px;overflow:auto;overscroll-behavior:contain}#board{min-height:0;margin:0;width:100%}
 .item-card,.item-card:nth-child(n),.item-card:nth-child(n):hover,.item-card:nth-child(n):active{min-height:52px;height:auto;padding:12px 14px;border-radius:16px;font-size:15px;line-height:1.5}
-.cat-head{width:28%;height:auto;aspect-ratio:10 / 7;top:auto;bottom:calc(100% - 4px);left:50%;object-fit:contain;mix-blend-mode:normal}
+.cat-head{width:42%;height:auto;aspect-ratio:10 / 7;top:auto;bottom:calc(100% - 4px);left:50%;object-fit:contain;mix-blend-mode:normal}
 main[data-view=check] .status{flex:none;min-height:32px;margin:0;font-size:15px}main[data-view=check] #tempDetails{margin:0;flex:none;max-height:160px;overflow:auto}main[data-view=check] #tempDetails summary{padding:10px 0}main[data-view=check] .actions{flex:none}main[data-view=check]>.hint{display:none}#tempDetails .library{margin:6px 0}#tempDetails label{margin:4px 0}
 #forgetDialog .forget-header{padding:10px 16px 0}#forgetDialog h2{font-size:24px;margin:2px 0 8px}#forgetDialog .forget-header p{margin:4px 0 8px}#forgetDialog .forget-node{font-size:13px}#forgetDialog .forget-node span{width:68%}#forgetBoard{min-height:0}#forgetDialog .forget-footer{padding:8px 16px max(10px,env(safe-area-inset-bottom))}#forgetDialog .forget-footer button{margin-top:6px}
 main[data-view=edit]>p{display:none}main[data-view=edit]>label{margin:0}main[data-view=edit]>input{padding:8px 12px;min-height:44px}main[data-view=edit] .panel{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;margin:2px 0;gap:4px}main[data-view=edit] .panel h2{font-size:16px}main[data-view=edit] .edit-guide{display:none}main[data-view=edit] .selected-items{flex:none;max-height:62px;overflow:auto;margin:0!important;padding:2px 0}main[data-view=edit] .library button{padding:9px 12px;min-height:44px}main[data-view=edit] .panel label{margin:0;font-size:12px}main[data-view=edit] .panel input{min-height:44px;padding:8px 12px}main[data-view=edit] #library{flex:1;min-height:50px;overflow-y:auto;overscroll-behavior:contain}main[data-view=edit] #saveScene{margin:0;min-height:46px;flex:none}main[data-view=edit] #deleteScene{min-height:44px;margin:0;padding:8px}#editNotice:empty{display:none}#editNotice{margin:0;font-size:12px}
@@ -206,6 +206,10 @@ main[data-view=edit] .library .item-name {
   font-size: var(--type-edit-item);
   font-weight: var(--weight-item);
 }
+main[data-view=edit] #library .item-content{gap:10px}
+main[data-view=edit] #library .item-illustration{width:36px;height:36px;flex-basis:36px;object-fit:contain}
+main[data-view=edit] #library button:not(:disabled) .item-name{color:#45433f}
+main[data-view=edit] #library .item-name{font-weight:400;line-height:1.3}
 main[data-view=edit] .categories button,
 main[data-view=edit] .category-label,
 main[data-view=edit] .current-category,
@@ -249,6 +253,10 @@ main[data-view=check] .item-card:active {
   color:var(--check-scene-ink,var(--ink));
 }
 main[data-view=check] .item-card:not(.confirmed) .item-illustration{filter:var(--check-scene-art-filter,none)}
+main[data-view=check] .item-card .item-content{gap:10px}
+main[data-view=check] .item-card .item-illustration{width:42px;height:42px;flex-basis:42px;object-fit:contain}
+main[data-view=check] .item-card .item-name{font-size:clamp(16px,4.25vw,17.5px);font-weight:400;line-height:1.3}
+main[data-view=check] #board[data-compact] .item-content{gap:7px}
 main[data-view=check] .item-card.confirmed {
   opacity: 1;
   background: var(--selected);
@@ -321,19 +329,23 @@ main[data-view=check] .item-card.confirmed{color:var(--ink)}
 .gallery .scene-create h2 {
   white-space: nowrap;
 }
-/* V1.9 typography uses the existing paper, ink, surface and line tokens. */
+/* Canonical typography tokens: Soft Editorial × Little Companion. */
 :root {
-  --type-display: clamp(32px, 9.744vw, 38px);
-  --type-h1: clamp(27px, 7.7vw, 30px);
-  --type-h2: 22px;
-  --type-card-title: 20px;
-  --type-body: 16px;
+  --type-display: clamp(32px, 9vw, 36px);
+  --type-h1: clamp(26px, 7.2vw, 28px);
+  --type-h2: clamp(19px, 5.2vw, 21px);
+  --type-card-title: clamp(18px, 5vw, 20px);
+  --type-body: clamp(14px, 4vw, 16px);
   --type-caption: 13px;
-  --type-check-item: clamp(18px, 4.875vw, 20px);
-  --type-edit-item: clamp(17px, 4.5vw, 18px);
-  --type-compact-item: clamp(14px, 3.75vw, 15px);
+  --type-check-item: clamp(16px, 4.25vw, 17.5px);
+  --type-edit-item: clamp(15px, 4.1vw, 17px);
+  --type-compact-item: clamp(13px, 3.7vw, 15px);
+  --type-micro: 12px;
+  --leading-title: 1.2;
+  --leading-body: 1.55;
+  --leading-label: 1.35;
   --weight-item: 500;
-  --weight-display: 700;
+  --weight-display: 600;
   --weight-heading: 600;
 }
 main[data-view=home] > h1 {
@@ -355,7 +367,7 @@ main[data-view=home] > h1 {
 main[data-view=check] > h1,
 main[data-view=edit] > h1 {
   font-size: var(--type-h1);
-  font-weight: 700;
+  font-weight: var(--weight-heading);
   line-height: 1.15;
   letter-spacing: -.025em;
   margin: 2px 0 6px;
@@ -556,3 +568,155 @@ main[data-view=history],main[data-view=historyDetail]{box-sizing:border-box;widt
 .history-missed{min-height:76px;padding:10px 12px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.history-missed>p{margin:14px 4px;color:var(--secondary);font-size:14px;line-height:1.55}.history-missed ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}.history-missed li{display:flex;min-height:44px;align-items:center;gap:9px;color:#4f4d49;font-size:14px}.history-missed-art{width:34px;height:34px;object-fit:contain}.history-missed li small{margin-left:auto;color:#99958d;font-size:10px}.history-edit-misses{display:flex;width:100%;min-height:50px;margin-top:12px;padding:0 15px 0 17px;align-items:center;justify-content:space-between;border:1px solid #dbd7cf;border-radius:16px;background:transparent;color:#4e4c48;font-size:15px;font-weight:600}.history-edit-misses:active{background:#f7f4ee;transform:scale(.99)}.history-edit-misses svg{width:18px;height:18px}
 @media(max-width:350px){main[data-view=history],main[data-view=historyDetail]{padding-left:16px;padding-right:16px}.history-record{grid-template-columns:5px minmax(0,1fr) 36px;min-height:84px;padding-left:14px}.history-color{width:5px;height:46px}.history-record-copy{padding-left:12px}.history-record-copy strong{font-size:18px}.history-items{gap:18px 4px}}
 @media(prefers-reduced-motion:reduce){.history-record,.history-edit-misses{transition:none}}
+
+/* Round-one motion system: light, consistent and layout-safe. */
+:root{--motion-fast:140ms;--motion-confirm:210ms;--motion-page:280ms;--motion-theme:280ms;--motion-ease:cubic-bezier(.2,.72,.3,1)}
+.item-card,.gallery .scene,.primary,.full,.temp-item-entry,.restart-check,.theme-option,.theme-button,.history-record,.history-edit-misses,.history-back,.history-link{transition-property:scale,background-color,border-color,color,opacity;transition-duration:var(--motion-fast),var(--motion-theme),var(--motion-theme),var(--motion-theme),var(--motion-fast);transition-timing-function:var(--motion-ease)}
+.item-card:active,.gallery .scene:active,.primary:active,.full:active,.temp-item-entry:active,.restart-check:active,.theme-option:active,.theme-button:active,.history-record:active,.history-edit-misses:active,.history-back:active,.history-link:active{scale:.975}
+.scene-shell.scene-dragging .scene{scale:1}
+main[data-view=check] .item-card{transition-duration:var(--motion-fast),var(--motion-confirm),var(--motion-confirm),var(--motion-confirm),var(--motion-confirm)}
+.gallery .scene-shell>.scene{transition:transform 200ms ease,scale var(--motion-fast) var(--motion-ease),background-color var(--motion-theme) var(--motion-ease),border-color var(--motion-theme) var(--motion-ease),color var(--motion-theme) var(--motion-ease)}
+.gallery .scene-shell>.scene *,.check-progress i,.check-progress-continuous i{transition:background-color var(--motion-theme) var(--motion-ease),border-color var(--motion-theme) var(--motion-ease),color var(--motion-theme) var(--motion-ease),filter var(--motion-theme) var(--motion-ease),width var(--motion-confirm) var(--motion-ease)}
+.history-record:active,.history-edit-misses:active{transform:none}
+main.page-enter-forward{animation:page-enter-forward var(--motion-page) var(--motion-ease) both}
+main.page-enter-back{animation:page-enter-back var(--motion-page) var(--motion-ease) both}
+main.page-enter-forward[data-view=check] .item-content{animation:item-content-enter 200ms var(--motion-ease) both;animation-delay:calc(var(--item-enter-index,0)*38ms)}
+@keyframes page-enter-forward{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes page-enter-back{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes item-content-enter{from{opacity:0;translate:6px 0}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:no-preference){#tempItemDialog[open],#themeDialog[open]{animation:temp-sheet-in 270ms var(--motion-ease)}#tempItemDialog[open]::backdrop,#themeDialog[open]::backdrop{animation:temp-backdrop-in 270ms ease}#tempItemDialog.sheet-closing,#themeDialog.sheet-closing{animation:sheet-out 250ms ease-in both}#tempItemDialog.sheet-closing::backdrop,#themeDialog.sheet-closing::backdrop{animation:sheet-backdrop-out 250ms ease-in both}}
+@keyframes sheet-out{to{transform:translateY(22px);opacity:0}}
+@keyframes sheet-backdrop-out{to{opacity:0}}
+@media(prefers-reduced-motion:reduce){main.page-enter-forward,main.page-enter-back,main.page-enter-forward[data-view=check] .item-content,#tempItemDialog[open],#themeDialog[open],#tempItemDialog.sheet-closing,#themeDialog.sheet-closing{animation:none!important}.item-card,.gallery .scene,.primary,.full,.temp-item-entry,.restart-check,.theme-option,.theme-button,.history-record,.history-edit-misses,.history-back,.history-link,.gallery .scene-shell>.scene,.gallery .scene-shell>.scene *,.check-progress i,.check-progress-continuous i{transition-duration:.01ms!important;transition-delay:0ms!important}}
+
+/* Global typography system. Keep this final layer as the single visual contract. */
+:root{
+  --font-sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC","Segoe UI",sans-serif;
+}
+html,body,button,input,select,textarea,dialog{font-family:var(--font-sans)}
+body{font-size:var(--type-body);font-weight:400;line-height:var(--leading-body);text-rendering:optimizeLegibility}
+button,input,select,textarea{font-weight:400;line-height:var(--leading-label);letter-spacing:0}
+h1,h2,h3,p{font-family:inherit}
+p{font-weight:400}
+
+/* Shared hierarchy. */
+main[data-view=home]>h1{font-size:var(--type-display);font-weight:600;line-height:1.12;letter-spacing:-.03em}
+.scene-section-heading h2{font-size:var(--type-h2);font-weight:600;line-height:var(--leading-title);letter-spacing:-.015em}
+.gallery h2{font-size:var(--type-card-title);font-weight:500;line-height:1.3;letter-spacing:-.01em}
+.eyebrow,.item-count{font-size:var(--type-micro);font-weight:500;line-height:1.35}
+main[data-view=home]>.intro{font-size:13px;font-weight:400;line-height:1.6;letter-spacing:0}
+.recent-departure h2{font-size:clamp(18px,4.9vw,19px);font-weight:500;line-height:1.3}
+.recent-departure p,.recent-departure button{font-size:12px;font-weight:400;line-height:1.45}
+
+/* Scene editor and item library. */
+main[data-view=edit]>h1,main[data-view=check]>h1{font-size:var(--type-h1);font-weight:600;line-height:1.18;letter-spacing:-.02em}
+main[data-view=edit] .panel h2{font-size:var(--type-h2);font-weight:600;line-height:1.25;letter-spacing:-.015em}
+main[data-view=edit] label{font-size:12px;font-weight:500;line-height:1.35}
+main[data-view=edit] .categories button{font-size:clamp(13px,3.7vw,15px);font-weight:500;line-height:1.25;letter-spacing:0}
+main[data-view=edit] .category-options button,
+main[data-view=edit] .category-label,
+main[data-view=edit] .current-category{font-size:clamp(12px,3.45vw,14px);font-weight:400;line-height:1.4;letter-spacing:0}
+main[data-view=edit] .category-options .category-label{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;text-align:center}
+main[data-view=edit] .library-group h3{margin:14px 0 9px;color:var(--secondary);font-size:15px;font-weight:500;line-height:1.35;letter-spacing:0}
+main[data-view=edit] #library .item-name{font-size:var(--type-edit-item);font-weight:400;line-height:1.3;letter-spacing:0;color:#45433f}
+main[data-view=edit] #library .item-content{gap:10px}
+main[data-view=edit] #itemSearch,main[data-view=edit] input{font-size:15px;font-weight:400;line-height:1.4}
+main[data-view=edit] .search-results small,#editNotice,#customItemError{font-size:12px;font-weight:400;line-height:1.5}
+
+/* Check flow stays illustration-led. */
+main[data-view=check]>p{font-size:13px;font-weight:400;line-height:1.5}
+main[data-view=check] .item-card .item-name{font-size:var(--type-check-item);font-weight:400;line-height:1.3;letter-spacing:0}
+main[data-view=check] .check-controls .status{font-size:15px;font-weight:400;line-height:1.3}
+.check-actions summary,.restart-check,.temp-item-entry{font-size:13px;font-weight:500;line-height:1.3}
+
+/* Bottom sheets, dialogs and supporting UI. */
+.temp-sheet h2,.theme-sheet h2{font-size:clamp(21px,5.9vw,23px);font-weight:600;line-height:1.25;letter-spacing:-.015em}
+.temp-sheet header p,.theme-sheet header p{font-size:12px;font-weight:400;line-height:1.5}
+.temp-sheet h3,.theme-preview h3{font-size:15px;font-weight:500;line-height:1.35}
+.temp-library-options button{font-size:11px;font-weight:400;line-height:1.25}
+.temp-search input,#tempItemName{font-size:15px;font-weight:400;line-height:1.4}
+.theme-option{font-size:14px;font-weight:500;line-height:1.3}
+.theme-scene-preview span{font-size:14px;font-weight:500;line-height:1.3}
+dialog h2,#customItemDialog h2,#sceneDeleteDialog h2{font-size:clamp(20px,5.7vw,23px);font-weight:600;line-height:1.25;letter-spacing:-.015em}
+dialog p,#sceneDeleteDialog p{font-size:14px;font-weight:400;line-height:1.55}
+dialog button{font-size:14px;font-weight:500;line-height:1.35}
+#forgetDialog h2{font-size:var(--type-display);font-weight:600;line-height:1.12;letter-spacing:-.03em}
+#forgetDialog .forget-node{font-size:13px;font-weight:400;line-height:1.35}
+
+/* Completion and history. */
+.completion h1{font-size:clamp(34px,9.5vw,40px);font-weight:600;line-height:1.12;letter-spacing:-.03em}
+.completion .completion-farewell{font-size:var(--type-body);font-weight:400;line-height:1.5}
+.history-header h1,.history-detail-hero h1{font-size:var(--type-h1);font-weight:600;line-height:1.18;letter-spacing:-.025em}
+.history-header p,.history-detail-hero p{font-size:14px;font-weight:400;line-height:1.55}
+.history-group>h2{font-size:15px;font-weight:600;line-height:1.35}
+.history-record-copy strong{font-size:clamp(18px,4.9vw,19px);font-weight:500;line-height:1.3;letter-spacing:-.015em}
+.history-record-copy time{font-size:13px;font-weight:400;line-height:1.35}
+.history-record-copy small{font-size:14px;font-weight:400;line-height:1.4}
+.history-detail-section h2{font-size:17px;font-weight:600;line-height:1.35}
+.history-items li>span:not(.history-item-fallback){font-size:12px;font-weight:400;line-height:1.35}
+.history-missed li,.history-note,.history-missed>p{font-size:14px;font-weight:400;line-height:1.5}
+.history-edit-misses{font-size:15px;font-weight:500;line-height:1.35}
+
+/* Scene editor item library: shared vertical artwork card for create and edit. */
+main[data-view=edit] #library .library{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:5px;
+  align-items:stretch;
+}
+main[data-view=edit] #library .library button{
+  display:flex;
+  min-width:0;
+  min-height:76px;
+  padding:7px 2px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border-color:#ebe8e2;
+  border-radius:11px;
+  text-align:center;
+  touch-action:manipulation;
+}
+main[data-view=edit] #library .item-content{
+  display:flex;
+  width:100%;
+  min-width:0;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  text-align:center;
+}
+main[data-view=edit] #library .item-illustration{
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  object-fit:contain;
+}
+main[data-view=edit] #library .item-name{
+  width:100%;
+  color:#45433f;
+  font-size:11px;
+  font-weight:400;
+  line-height:1.25;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+main[data-view=edit] #library .search-results button small{
+  width:100%;
+  margin-top:-1px;
+  text-align:center;
+}
+main[data-view=edit] #library .custom-plus{
+  width:100%;
+  min-width:0;
+  min-height:76px;
+  padding:7px 2px;
+}
+@media(max-width:350px){
+  main[data-view=edit] #library .library{gap:3px}
+  main[data-view=edit] #library .library button,
+  main[data-view=edit] #library .custom-plus{min-height:72px;padding-inline:1px}
+  main[data-view=edit] #library .item-name{font-size:10px}
+}

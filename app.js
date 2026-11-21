@@ -4,23 +4,31 @@ const HOME_GUIDE_KEY='last-minute-home-guide-v1';
 const HISTORY_SEEN_KEY='last-minute-history-seen-v1', HISTORY_BASELINE_KEY='last-minute-history-baseline-v1', HISTORY_GUIDE_KEY='last-minute-history-guide-v1', HISTORY_GUIDE_PENDING_KEY='last-minute-history-guide-pending-v1';
 const THEME_KEY='last-minute-theme-v1';
 const calicoPalette=Object.freeze({
- cream:'#f3ebdd',
- apricot:'#ebc5a7',
- taupe:'#d1c9bf',
- green:'#dce6d5',
+ cream:'#FFF5E8',
+ apricot:'#FCB692',
+ taupe:'#B0703F',
+ green:'#A6C97A',
 });
 const calicoColors=Object.values(calicoPalette);
 const appThemes=Object.freeze({
  calico:{name:'三花猫',colors:calicoColors},
- british:{name:'英短蓝白',colors:['#8FA3B0','#4E6273','#F5F7F8','#C08A2E']},
- golden:{name:'金渐层',colors:['#D9A94E','#8A5E22','#2F2419','#2F7D5B']},
- tuxedo:{name:'奶牛猫',colors:['#1F1F1F','#FAFAF8','#B8BCC0','#A8C8D8']},
- maine:{name:'缅因棕虎斑',colors:['#6B4F38','#A8763F','#2A2420','#8C9A4F']},
+ british:{name:'英短蓝白',colors:['#F8FBFD','#6FA6CE','#35648C','#F0A93C']},
+ golden:{name:'金渐层',colors:['#F7C63A','#D18A22','#5A3A16','#2FA36E']},
+ tuxedo:{name:'奶牛猫',colors:['#FFFDF8','#2B3542','#C6CDD6','#45C2E0']},
+ maine:{name:'缅因棕虎斑',colors:['#D08A4A','#A85A2C','#5C2E12','#A8C24A']},
 });
 // Future theme-specific cat PNGs can be added here without changing scene color logic.
-const themeCatArtwork=Object.freeze({calico:{peek:'assets/cat-peek.svg',greeting:'assets/cat-greeting.png'}});
+const themeCatArtwork=Object.freeze({
+  calico:{peek:'assets/cat-peek.svg',greeting:'assets/cat-greeting.png'},
+  british:{peek:'assets/cat-peek-british.png?v=2'},
+  golden:{peek:'assets/cat-peek-golden.png?v=2'},
+  tuxedo:{peek:'assets/cat-peek-tuxedo.png?v=2'},
+  maine:{peek:'assets/cat-peek-maine.png?v=2'}
+});
+function activeCatPeek(){return themeCatArtwork[activeThemeId]?.peek||themeCatArtwork.calico.peek}
 const allThemeColors=Object.values(appThemes).flatMap(theme=>theme.colors).map(color=>color.toLowerCase());
-const legacySceneColors=[calicoPalette.cream,calicoPalette.apricot,calicoPalette.taupe];
+const legacyCalicoColors=['#f3ebdd','#ebc5a7','#d1c9bf','#dce6d5'];
+const legacySceneColors=calicoColors.slice(0,3);
 const initialScenes=[
  {id:'class',name:'上课',items:['书本','笔记本','笔','电脑'],themeColor:calicoPalette.cream,colorSlot:0},
  {id:'work',name:'工作',items:['电脑','手机','钥匙','工牌'],themeColor:calicoPalette.apricot,colorSlot:1},
@@ -31,7 +39,7 @@ function validSceneColor(value){
  const color=typeof value==='string'?value.trim().toLowerCase():'';
  return allThemeColors.includes(color)?color:null;
 }
-function colorSlot(scene,index=0){const saved=Number(scene?.colorSlot);if(Number.isInteger(saved)&&saved>=0&&saved<4)return saved;const legacy=calicoColors.indexOf(String(scene?.themeColor||'').toLowerCase());return legacy>=0?legacy:index%4}
+function colorSlot(scene,index=0){const saved=Number(scene?.colorSlot);if(Number.isInteger(saved)&&saved>=0&&saved<4)return saved;const stored=String(scene?.themeColor||'').toLowerCase(),current=calicoColors.map(color=>color.toLowerCase()).indexOf(stored),legacy=legacyCalicoColors.indexOf(stored);return current>=0?current:legacy>=0?legacy:index%4}
 function themeColor(scene,themeId=activeThemeId,index=0){return appThemes[themeId]?.colors[colorSlot(scene,index)]||calicoColors[colorSlot(scene,index)]}
 function relativeLuminance(hex){const values=hex.slice(1).match(/.{2}/g).map(value=>parseInt(value,16)/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4);return .2126*values[0]+.7152*values[1]+.0722*values[2]}
 function colorInk(hex){return relativeLuminance(hex)>.179?'#171614':'#fffdf8'}
@@ -51,6 +59,21 @@ let category='全部',query='',transitioning=false;
 let data=load(),active=null,draft=null,view='home',confirmed=new Set(),temporary=[],entryCounts={};
 let activeThemeId='calico',themePreviewId='calico';try{const savedTheme=localStorage.getItem(THEME_KEY);if(appThemes[savedTheme])activeThemeId=savedTheme}catch{}
 const app=document.querySelector('#app'),dialog=document.querySelector('dialog'),tempItemDialog=document.querySelector('#tempItemDialog'),themeDialog=document.querySelector('#themeDialog');
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+let pageMotionReady=false,pageMotionTimer=null;
+function animatePage(direction='forward'){
+ if(!pageMotionReady){pageMotionReady=true;return}
+ if(reduceMotion())return;
+ clearTimeout(pageMotionTimer);app.classList.remove('page-enter-forward','page-enter-back');
+ void app.offsetWidth;app.classList.add(direction==='back'?'page-enter-back':'page-enter-forward');
+ pageMotionTimer=setTimeout(()=>app.classList.remove('page-enter-forward','page-enter-back'),310);
+}
+function closeSheet(sheet){
+ if(!sheet.open)return;
+ if(reduceMotion()){sheet.close();return}
+ sheet.classList.add('sheet-closing');
+ setTimeout(()=>{sheet.classList.remove('sheet-closing');if(sheet.open)sheet.close()},260);
+}
 const basicIllustrations={"手机":{"key":"basic-phone","src":"assets/items/basic-phone.png"},"钥匙":{"key":"basic-keys","src":"assets/items/basic-keys.png"},"钱包":{"key":"basic-wallet","src":"assets/items/basic-wallet.png"},"身份证":{"key":"basic-id-card","src":"assets/items/basic-id-card.png"},"银行卡":{"key":"basic-bank-card","src":"assets/items/basic-bank-card.png"},"现金":{"key":"basic-cash","src":"assets/items/basic-cash.png"},"公交卡":{"key":"basic-transit-card","src":"assets/items/basic-transit-card.png"},"门禁卡":{"key":"basic-access-card","src":"assets/items/basic-access-card.png"},"学生证":{"key":"basic-student-card","src":"assets/items/basic-student-card.png"},"驾驶证":{"key":"basic-driving-license","src":"assets/items/basic-driving-license.png"},"纸巾":{"key":"basic-tissues","src":"assets/items/basic-tissues.png"},"湿巾":{"key":"basic-wet-wipes","src":"assets/items/basic-wet-wipes.png"},"口罩":{"key":"basic-mask","src":"assets/items/basic-mask.png"},"水杯":{"key":"basic-cup","src":"assets/items/basic-cup.png"}};
 const itemIllustrationCatalog={"随身基础":{"公交卡":{"key":"basic-transit-card","src":"assets/items/basic-transit-card.png"},"口罩":{"key":"basic-mask","src":"assets/items/basic-mask.png"},"学生证":{"key":"basic-student-card","src":"assets/items/basic-student-card.png"},"手机":{"key":"basic-phone","src":"assets/items/basic-phone.png"},"水杯":{"key":"basic-cup","src":"assets/items/basic-cup.png"},"湿巾":{"key":"basic-wet-wipes","src":"assets/items/basic-wet-wipes.png"},"现金":{"key":"basic-cash","src":"assets/items/basic-cash.png"},"纸巾":{"key":"basic-tissues","src":"assets/items/basic-tissues.png"},"身份证":{"key":"basic-id-card","src":"assets/items/basic-id-card.png"},"钥匙":{"key":"basic-keys","src":"assets/items/basic-keys.png"},"钱包":{"key":"basic-wallet","src":"assets/items/basic-wallet.png"},"银行卡":{"key":"basic-bank-card","src":"assets/items/basic-bank-card.png"},"门禁卡":{"key":"basic-access-card","src":"assets/items/basic-access-card.png"},"驾驶证":{"key":"basic-driving-license","src":"assets/items/basic-driving-license.png"}},"数码电子":{"U盘":{"key":"digital-usb-drive","src":"assets/items/digital-usb-drive.png"},"充电器":{"key":"digital-charger","src":"assets/items/digital-charger.png"},"充电宝":{"key":"digital-power-bank","src":"assets/items/digital-power-bank.png"},"充电线":{"key":"digital-charging-cable","src":"assets/items/digital-charging-cable.png"},"存储卡":{"key":"digital-memory-card","src":"assets/items/digital-memory-card.png"},"平板电脑":{"key":"digital-tablet","src":"assets/items/digital-tablet.png"},"相机":{"key":"digital-camera","src":"assets/items/digital-camera.png"},"相机电池":{"key":"digital-camera-battery","src":"assets/items/digital-camera-battery.png"},"移动硬盘":{"key":"digital-external-drive","src":"assets/items/digital-external-drive.png"},"笔记本电脑":{"key":"digital-laptop","src":"assets/items/digital-laptop.png"},"耳机":{"key":"digital-earphones","src":"assets/items/digital-earphones.png"},"触控笔":{"key":"digital-stylus","src":"assets/items/digital-stylus.png"},"转换器":{"key":"digital-adapter","src":"assets/items/digital-adapter.png"},"鼠标":{"key":"digital-mouse","src":"assets/items/digital-mouse.png"}},"学习用品":{"书签":{"key":"study-bookmark","src":"assets/items/study-bookmark.png"},"作业":{"key":"study-homework","src":"assets/items/study-homework.png"},"尺子":{"key":"study-ruler","src":"assets/items/study-ruler.png"},"打印资料":{"key":"study-printouts","src":"assets/items/study-printouts.png"},"文件夹":{"key":"study-folder","src":"assets/items/study-folder.png"},"文具盒":{"key":"study-pencil-case","src":"assets/items/study-pencil-case.png"},"画本":{"key":"study-sketchbook","src":"assets/items/study-sketchbook.png"},"画笔":{"key":"study-paintbrush","src":"assets/items/study-paintbrush.png"},"笔":{"key":"study-pen","src":"assets/items/study-pen.png"},"笔记本":{"key":"study-notebook","src":"assets/items/study-notebook.png"},"草稿纸":{"key":"study-draft-paper","src":"assets/items/study-draft-paper.png"},"计算器":{"key":"study-calculator","src":"assets/items/study-calculator.png"},"课本":{"key":"study-textbook","src":"assets/items/study-textbook.png"}},"工作办公":{"会议资料":{"key":"office-meeting-documents","src":"assets/items/office-meeting-documents.png"},"印章":{"key":"office-stamp","src":"assets/items/office-stamp.png"},"名片":{"key":"office-business-card","src":"assets/items/office-business-card.png"},"工作文件":{"key":"office-documents","src":"assets/items/office-documents.png"},"工作电脑":{"key":"office-computer","src":"assets/items/office-computer.png"},"工作钥匙":{"key":"office-keys","src":"assets/items/office-keys.png"},"工牌":{"key":"office-badge","src":"assets/items/office-badge.png"},"文件袋":{"key":"office-document-bag","src":"assets/items/office-document-bag.png"},"记事本":{"key":"office-notepad","src":"assets/items/office-notepad.png"}},"衣物配饰":{"发圈":{"key":"item05-c91ae11d6a1e","src":"assets/items/item05-c91ae11d6a1e.png"},"围巾":{"key":"item05-3f12713b4041","src":"assets/items/item05-3f12713b4041.png"},"备用衣物":{"key":"item05-5cb50d9b4b58","src":"assets/items/item05-5cb50d9b4b58.png"},"外套":{"key":"item05-a147f88dee08","src":"assets/items/item05-a147f88dee08.png"},"太阳镜":{"key":"item05-e089252fe095","src":"assets/items/item05-e089252fe095.png"},"帽子":{"key":"item05-47641b97b149","src":"assets/items/item05-47641b97b149.png"},"手套":{"key":"item05-5155aac6341d","src":"assets/items/item05-5155aac6341d.png"},"换洗内衣":{"key":"item05-cf1941962eeb","src":"assets/items/item05-cf1941962eeb.png"},"眼镜":{"key":"item05-07f4669267b1","src":"assets/items/item05-07f4669267b1.png"},"袜子":{"key":"item05-6b45c62e5684","src":"assets/items/item05-6b45c62e5684.png"},"雨伞":{"key":"item05-b29535e760df","src":"assets/items/item05-b29535e760df.png"},"雨衣":{"key":"item05-77301fb12993","src":"assets/items/item05-77301fb12993.png"},"鞋子":{"key":"item05-6254733b4f4c","src":"assets/items/item05-6254733b4f4c.png"}},"洗护美容":{"化妆包":{"key":"item06-df9f5f728173","src":"assets/items/item06-df9f5f728173.png"},"卸妆用品":{"key":"item06-e88ac0467e09","src":"assets/items/item06-e88ac0467e09.png"},"口红":{"key":"item06-67e964a1eaf8","src":"assets/items/item06-67e964a1eaf8.png"},"护手霜":{"key":"item06-192759b8e981","src":"assets/items/item06-192759b8e981.png"},"护理液":{"key":"item06-e45e5df98c31","src":"assets/items/item06-e45e5df98c31.png"},"梳子":{"key":"item06-d92fcc698a33","src":"assets/items/item06-d92fcc698a33.png"},"润唇膏":{"key":"item06-041f1d73322e","src":"assets/items/item06-041f1d73322e.png"},"牙刷":{"key":"item06-66fbdc55ee2f","src":"assets/items/item06-66fbdc55ee2f.png"},"牙膏":{"key":"item06-ae73fd9eea24","src":"assets/items/item06-ae73fd9eea24.png"},"镜子":{"key":"item06-ec3a25c50232","src":"assets/items/item06-ec3a25c50232.png"},"防晒霜":{"key":"item06-9cef860360b6","src":"assets/items/item06-9cef860360b6.png"},"隐形眼镜":{"key":"item06-246f87c5969a","src":"assets/items/item06-246f87c5969a.png"}},"健康个人护理":{"保温杯":{"key":"item07-6769249bf1c4","src":"assets/items/item07-6769249bf1c4.png"},"创可贴":{"key":"item07-ef5e5191e487","src":"assets/items/item07-ef5e5191e487.png"},"卫生巾":{"key":"item07-fc9ba433478d","src":"assets/items/item07-fc9ba433478d.png"},"常用药":{"key":"item07-95c68a4fa260","src":"assets/items/item07-95c68a4fa260.png"},"急救用品":{"key":"item07-05e8f1ee0ffd","src":"assets/items/item07-05e8f1ee0ffd.png"},"护垫":{"key":"item07-24fcaae54498","src":"assets/items/item07-24fcaae54498.png"},"护膝":{"key":"item07-ccfebcb11054","src":"assets/items/item07-ccfebcb11054.png"},"消毒用品":{"key":"item07-b5bfb721c976","src":"assets/items/item07-b5bfb721c976.png"}},"运动健身":{"健身卡":{"key":"item08-b5ca8004820a","src":"assets/items/item08-b5ca8004820a.png"},"护腕":{"key":"item08-bb3df9915fc5","src":"assets/items/item08-bb3df9915fc5.png"},"毛巾":{"key":"item08-8e07613812cc","src":"assets/items/item08-8e07613812cc.png"},"泳衣":{"key":"item08-c74cc5f0a9d2","src":"assets/items/item08-c74cc5f0a9d2.png"},"泳镜":{"key":"item08-324ae0a1690c","src":"assets/items/item08-324ae0a1690c.png"},"瑜伽垫":{"key":"item08-2e53ad77d40e","src":"assets/items/item08-2e53ad77d40e.png"},"跳绳":{"key":"item08-5b162aa87516","src":"assets/items/item08-5b162aa87516.png"},"运动服":{"key":"item08-1d98ebc5f916","src":"assets/items/item08-1d98ebc5f916.png"},"运动水壶":{"key":"item08-0eee172c35e0","src":"assets/items/item08-0eee172c35e0.png"},"运动鞋":{"key":"item08-fad6c945b774","src":"assets/items/item08-fad6c945b774.png"}},"旅行住宿":{"住宿资料":{"key":"item09-4b4993ea2520","src":"assets/items/item09-4b4993ea2520.png"},"护照":{"key":"item09-2cfd9c277004","src":"assets/items/item09-2cfd9c277004.png"},"旅行充电器":{"key":"item09-def5d0e28be9","src":"assets/items/item09-def5d0e28be9.png"},"旅行背包":{"key":"item09-f9e8ecb099de","src":"assets/items/item09-f9e8ecb099de.png"},"机票资料":{"key":"item09-20c737db7909","src":"assets/items/item09-20c737db7909.png"},"洗漱包":{"key":"item09-ab3695321985","src":"assets/items/item09-ab3695321985.png"},"睡衣":{"key":"item09-389ad45edec1","src":"assets/items/item09-389ad45edec1.png"},"签证材料":{"key":"item09-199fe72d0184","src":"assets/items/item09-199fe72d0184.png"},"行李箱":{"key":"item09-820d178eccdc","src":"assets/items/item09-820d178eccdc.png"},"行程单":{"key":"item09-cc4732b28a74","src":"assets/items/item09-cc4732b28a74.png"},"车票":{"key":"item09-b7248d9c9763","src":"assets/items/item09-b7248d9c9763.png"},"转换插头":{"key":"item09-d558904c58a2","src":"assets/items/item09-d558904c58a2.png"}},"演出娱乐":{"应援物":{"key":"item10-31cc12fa3038","src":"assets/items/item10-31cc12fa3038.png"},"手柄":{"key":"item10-debad45c0b3a","src":"assets/items/item10-debad45c0b3a.png"},"拍立得":{"key":"item10-b5b0ca71a352","src":"assets/items/item10-b5b0ca71a352.png"},"望远镜":{"key":"item10-d59d24fca8c8","src":"assets/items/item10-d59d24fca8c8.png"},"游戏机":{"key":"item10-e370f81ae74a","src":"assets/items/item10-e370f81ae74a.png"},"演出票":{"key":"item10-77aa52ec5ff8","src":"assets/items/item10-77aa52ec5ff8.png"},"电影票":{"key":"item10-beaf0976dd86","src":"assets/items/item10-beaf0976dd86.png"},"相机":{"key":"item10-f8b24bb0d641","src":"assets/items/item10-f8b24bb0d641.png"},"签名本":{"key":"item10-2d50a38dedb3","src":"assets/items/item10-2d50a38dedb3.png"},"荧光棒":{"key":"item10-d9b2d2b66f02","src":"assets/items/item10-d9b2d2b66f02.png"},"预约凭证":{"key":"item10-a541ee9443df","src":"assets/items/item10-a541ee9443df.png"}},"饮食购物":{"优惠券":{"key":"item11-26afef04a660","src":"assets/items/item11-26afef04a660.png"},"会员卡":{"key":"item11-e3a7040827c9","src":"assets/items/item11-e3a7040827c9.png"},"便当":{"key":"item11-eaa65b6e623b","src":"assets/items/item11-eaa65b6e623b.png"},"保温袋":{"key":"item11-679ee5da643c","src":"assets/items/item11-679ee5da643c.png"},"水果":{"key":"item11-d043ef6702f5","src":"assets/items/item11-d043ef6702f5.png"},"购物清单":{"key":"item11-f3adf9296ea3","src":"assets/items/item11-f3adf9296ea3.png"},"购物袋":{"key":"item11-64b8c51671d7","src":"assets/items/item11-64b8c51671d7.png"},"零食":{"key":"item11-653db6d7f476","src":"assets/items/item11-653db6d7f476.png"},"餐具":{"key":"item11-37de822222af","src":"assets/items/item11-37de822222af.png"}},"特殊与临时":{"借还书籍":{"key":"item12-be258de49ee3","src":"assets/items/item12-be258de49ee3.png"},"其他临时物品":{"key":"item12-52c3f9645b82","src":"assets/items/item12-52c3f9645b82.png"},"宠物牵引绳":{"key":"item12-309350e5dc5f","src":"assets/items/item12-309350e5dc5f.png"},"宠物用品":{"key":"item12-4d82f9eb0d68","src":"assets/items/item12-4d82f9eb0d68.png"},"待交材料":{"key":"item12-c764e47f0f36","src":"assets/items/item12-c764e47f0f36.png"},"待寄信件":{"key":"item12-a0f3a8d14d76","src":"assets/items/item12-a0f3a8d14d76.png"},"快递":{"key":"item12-d2391375285b","src":"assets/items/item12-d2391375285b.png"},"礼物":{"key":"item12-c05557eea3ee","src":"assets/items/item12-c05557eea3ee.png"},"退货物品":{"key":"item12-1877006bb139","src":"assets/items/item12-1877006bb139.png"}}};
 const illustrationById=new Map();
@@ -162,11 +185,12 @@ function home(){openSceneId=null;clearCompletionTimers();checkRecordId=null;chec
  app.querySelector('#dismissHistoryGuide')?.addEventListener('click',dismissHistoryGuide);
  app.querySelectorAll('.scene-shell').forEach(bindSceneGesture);
  document.querySelector('#create').onclick=()=>edit();
+ animatePage('back');
 }
 
 function pushAppState(nextView,recordId=null){window.history.pushState({lastMinuteView:nextView,recordId},'',nextView==='history'? '#history':nextView==='historyDetail'?`#history/${encodeURIComponent(recordId)}`:location.pathname)}
 function listTime(record,group){const date=departureDate(record);if(!date)return '时间未记录';return date.toLocaleString('zh-CN',group==='更早'?{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{hour:'2-digit',minute:'2-digit',hourCycle:'h23'})}
-function openHistory({push=true,restore=false}={}){
+function openHistory({push=true,restore=false,direction='forward'}={}){
  markHistorySeen();
  clearCompletionTimers();view='history';historyRecordId=null;active=null;app.dataset.view=view;
  const sorted=departures().map(normalizedDeparture).sort((a,b)=>(departureDate(b)?.getTime()||0)-(departureDate(a)?.getTime()||0));
@@ -178,16 +202,18 @@ function openHistory({push=true,restore=false}={}){
  if(push)pushAppState('history');
  if(restore){const y=historyScrollY;setTimeout(()=>window.scrollTo(0,y),0)}else window.scrollTo(0,0);
  requestAnimationFrame(()=>app.querySelector('h1')?.focus({preventScroll:true}));
+ animatePage(direction);
 }
 function historySnapshotMarkup(item){return `<li>${snapshotArtwork(item)}<span>${esc(item.name)}</span>${item.temporary?'<small>临时</small>':''}</li>`}
-function openHistoryDetail(recordId,{push=true}={}){
- const raw=departures().find(record=>record.recordId===recordId);if(!raw)return openHistory({push:false,restore:true});
+function openHistoryDetail(recordId,{push=true,direction='forward'}={}){
+ const raw=departures().find(record=>record.recordId===recordId);if(!raw)return openHistory({push:false,restore:true,direction:'back'});
  const record=normalizedDeparture(raw),items=departureItems(record),missed=new Set(record.missedItemIds||[]);view='historyDetail';historyRecordId=record.recordId;app.dataset.view=view;
  app.innerHTML=`<nav class="history-nav" aria-label="页面导航"><button class="history-back" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m12.5 4.5-5.5 5.5 5.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>出门足迹</span></button></nav><header class="history-detail-hero" style="--history-color:${record.themeColor}"><span aria-hidden="true"></span><h1 tabindex="-1">${esc(record.sceneName)}</h1><p>${esc(departureTime(record,true))} · 已完成检查</p></header><section class="history-detail-section"><div><h2>当时检查的物品</h2><span>${items.length} 件</span></div>${items.length?`<ul class="history-items">${items.map(historySnapshotMarkup).join('')}</ul>`:'<p class="history-note">这条旧记录没有保存物品快照。</p>'}</section><section class="history-detail-section"><div><h2>后来发现忘带了</h2><span>${missed.size} 件</span></div><div class="history-missed">${missed.size?`<ul>${items.filter(item=>missed.has(item.id)).map(item=>`<li>${snapshotArtwork(item,'history-missed-art')}<span>${esc(item.name)}</span>${item.temporary?'<small>临时</small>':''}</li>`).join('')}</ul>`:'<p>这次还没有记录后来发现忘带的物品。</p>'}</div><button type="button" id="editHistoryMisses" class="history-edit-misses"><span>${missed.size?'修改遗漏':'记录遗漏'}</span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m7.5 5 5 5-5 5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg></button></section>`;
  app.querySelector('.history-back').onclick=()=>window.history.state?.lastMinuteView==='historyDetail'?window.history.back():openHistory({push:false,restore:true});
  app.querySelector('#editHistoryMisses').onclick=()=>openForget(record.recordId,'historyDetail');
  if(push)pushAppState('historyDetail',record.recordId);
  window.scrollTo(0,0);requestAnimationFrame(()=>app.querySelector('h1')?.focus({preventScroll:true}));
+ animatePage(direction);
 }
 
 let openSceneId = null;
@@ -417,11 +443,13 @@ document.querySelector('#saveScene').onclick=()=>{
  const scene={...draft,name,themeColor,colorSlot:slot};
  const scenes=existing?data.scenes.map(s=>s.id===scene.id?scene:s):[...data.scenes,scene];
  if(persist({...data,scenes}))home();
-}}
+}
+animatePage('forward');
+}
 const greetingImage = new Image();
 const greetingSource = "assets/cat-greeting.png";
-function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();dismissHomeGuide();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,themeColor:themeColor(active),items:active.items.map(id=>({id,name:name(id)}))};view='check';applyCheckTheme(active);app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`${homeBackButton}<div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><section class="check-controls" aria-label="检查操作"><div class="status" role="status" id="status"></div><div class="check-actions"><button id="openTempItems" class="temp-item-entry" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>临时物品</span><small id="tempCount" hidden></small></button><button id="restart" class="restart-check" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.2 6.2A6 6 0 1 1 4 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3.5 4v3.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>重新检查</span></button></div></section>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#openTempItems').onclick=openTempItems;active.items.forEach(addCard);renderTemporary();status();layout();checkResize.observe(app.querySelector('.board-scroll'))}
-function addCard(id){const b=document.createElement('button');b.className='item-card';b.dataset.item=id;b.setAttribute('aria-pressed','false');b.innerHTML=(entryCounts[id]>0?'<img class="cat-head" src="assets/cat-peek.svg" width="32" height="22.4" alt="猫猫提醒，曾经漏带">':'')+itemLabel(id);b.onclick=()=>{confirmed.has(id)?confirmed.delete(id):confirmed.add(id);b.classList.toggle('confirmed',confirmed.has(id));b.setAttribute('aria-pressed',String(confirmed.has(id)));status()};document.querySelector('#board').append(b)}
+function enter(id){clearCompletionTimers();active=data.scenes.find(s=>s.id===id);if(!active)return home();dismissHomeGuide();if(!greetingImage.src)greetingImage.src=greetingSource;checkRecordId=uid();checkSnapshot={sceneId:active.id,sceneName:active.name,themeColor:themeColor(active),items:active.items.map(id=>({id,name:name(id)}))};view='check';applyCheckTheme(active);app.dataset.view=view;temporary=[];confirmed=new Set();entryCounts=Object.fromEntries(active.items.map(id=>[id,count(active,id)]));app.innerHTML=`${homeBackButton}<div class="eyebrow">出门检查</div><h1>${esc(active.name)}</h1><p>点一下，确认已带好；再点一下取消。</p><div class="board-scroll" tabindex="0" role="region" aria-label="检查物品，可上下滚动"><div class="board-stage"><div class="board" id="board"></div></div></div><section class="check-controls" aria-label="检查操作"><div class="status" role="status" id="status"></div><div class="check-actions"><button id="openTempItems" class="temp-item-entry" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>临时物品</span><small id="tempCount" hidden></small></button><button id="restart" class="restart-check" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.2 6.2A6 6 0 1 1 4 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M3.5 4v3.5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>重新检查</span></button></div></section>`;document.querySelector('#back').onclick=home;document.querySelector('#restart').onclick=()=>enter(id);document.querySelector('#openTempItems').onclick=openTempItems;active.items.forEach(addCard);renderTemporary();status();layout();checkResize.observe(app.querySelector('.board-scroll'));animatePage('forward')}
+function addCard(id){const board=document.querySelector('#board'),b=document.createElement('button');b.className='item-card';b.dataset.item=id;b.style.setProperty('--item-enter-index',board.children.length);b.setAttribute('aria-pressed','false');b.innerHTML=(entryCounts[id]>0?`<img class="cat-head" src="${activeCatPeek()}" width="32" height="22.4" alt="" aria-hidden="true" onerror="this.onerror=null;this.src='${themeCatArtwork.calico.peek}'">`:'')+itemLabel(id);b.onclick=()=>{confirmed.has(id)?confirmed.delete(id):confirmed.add(id);b.classList.toggle('confirmed',confirmed.has(id));b.setAttribute('aria-pressed',String(confirmed.has(id)));status()};board.append(b)}
 function renderTemporary(){const badge=document.querySelector('#tempCount');if(badge){badge.textContent=temporary.length;badge.hidden=!temporary.length;document.querySelector('#openTempItems')?.setAttribute('aria-label',`临时物品${temporary.length?`，已添加 ${temporary.length} 件`:''}`)}if(tempItemDialog.open)renderTempLibrary()}
 let tempLibraryQuery='',tempDialogBackdropPressed=false;
 function tempLibraryItemMarkup(item){bindItemIllustration(item);const src=illustrationById.get(item.id),selected=temporary.some(entry=>entry.sourceLibraryId===item.id),disabled=active.items.includes(item.id),state=disabled?'场景已有':selected?'已加入':'';return `<button type="button" data-temp-library="${esc(item.id)}" aria-pressed="${selected}" ${disabled?'disabled':''} aria-label="${esc(item.name)}${state?`，${state}`:''}">${src?`<img ${window.itemArtwork?window.itemArtwork.prepare(src):`src="${src}"`} width="32" height="32" alt="" aria-hidden="true" decoding="async">`:`<span class="temp-library-fallback" aria-hidden="true">${categoryIcon(item.category||'')}</span>`}<span>${esc(item.name)}</span>${state?`<small>${state}</small>`:''}</button>`}
@@ -432,17 +460,22 @@ function addCustomTemporary(){const input=document.querySelector('#tempItemName'
 function openTempItems(){if(view!=='check')return;tempLibraryQuery='';document.querySelector('#tempItemSearch').value='';document.querySelector('#tempItemName').value='';document.querySelector('#tempItemNotice').textContent='';renderTempLibrary();tempItemDialog.showModal();requestAnimationFrame(()=>document.querySelector('#tempItemSearch').focus({preventScroll:true}))}
 document.querySelector('#tempItemSearch').addEventListener('input',event=>{tempLibraryQuery=event.target.value;renderTempLibrary()});
 document.querySelector('#tempItemForm').addEventListener('submit',event=>{event.preventDefault();addCustomTemporary()});
-document.querySelector('#closeTempItems').onclick=()=>tempItemDialog.close();
+document.querySelector('#closeTempItems').onclick=()=>closeSheet(tempItemDialog);
 tempItemDialog.addEventListener('pointerdown',event=>{tempDialogBackdropPressed=event.target===tempItemDialog});
-tempItemDialog.addEventListener('click',event=>{if(tempDialogBackdropPressed&&event.target===tempItemDialog)tempItemDialog.close();tempDialogBackdropPressed=false});
+tempItemDialog.addEventListener('click',event=>{if(tempDialogBackdropPressed&&event.target===tempItemDialog)closeSheet(tempItemDialog);tempDialogBackdropPressed=false});
 let themeDialogBackdropPressed=false;
 function themeOptionMarkup([id,theme]){return `<button type="button" class="theme-option" data-theme-id="${id}" aria-pressed="${themePreviewId===id}" data-current="${activeThemeId===id}"><span class="theme-swatches" aria-hidden="true">${theme.colors.map(color=>`<i style="background:${color}"></i>`).join('')}</span><span>${theme.name}</span>${activeThemeId===id?'<small>当前主题</small>':''}</button>`}
 function renderThemePreview(){const theme=appThemes[themePreviewId],scenes=Array.from({length:4},(_,index)=>data.scenes[index]||{name:`场景 ${index+1}`,colorSlot:index});document.querySelector('#themeOptions').innerHTML=Object.entries(appThemes).map(themeOptionMarkup).join('');document.querySelector('#themePreviewName').textContent=theme.name;document.querySelector('#themeScenePreview').innerHTML=scenes.map((scene,index)=>`<div style="${sceneThemeStyle(scene,themePreviewId,index)}"><span>${esc(scene.name)}</span><small>Slot ${colorSlot(scene,index)+1}</small></div>`).join('');document.querySelectorAll('[data-theme-id]').forEach(button=>button.onclick=()=>{themePreviewId=button.dataset.themeId;renderThemePreview()})}
 function openThemeDialog(){themePreviewId=activeThemeId;renderThemePreview();themeDialog.showModal();requestAnimationFrame(()=>document.querySelector(`[data-theme-id="${themePreviewId}"]`)?.focus({preventScroll:true}))}
-document.querySelector('#closeThemeDialog').onclick=()=>themeDialog.close();
-document.querySelector('#applyTheme').onclick=()=>{activeThemeId=themePreviewId;writeStorage(THEME_KEY,activeThemeId);themeDialog.close();home()};
+document.querySelector('#closeThemeDialog').onclick=()=>closeSheet(themeDialog);
+function applyThemeInPlace(){
+ app.querySelector('#themeButton')?.setAttribute('aria-label',`选择主题，当前${appThemes[activeThemeId].name}`);
+ app.querySelectorAll('.scene-shell[data-scene-id]').forEach((shell,index)=>{const scene=data.scenes.find(item=>item.id===shell.dataset.sceneId);if(!scene)return;const color=themeColor(scene,activeThemeId,index),ink=colorInk(color);shell.style.setProperty('--scene-card-color',color);shell.style.setProperty('--scene-card-ink',ink);shell.style.setProperty('--scene-card-art-filter',ink==='#fffdf8'?'invert(1) brightness(1.15)':'none')});
+}
+document.querySelector('#applyTheme').onclick=()=>{activeThemeId=themePreviewId;writeStorage(THEME_KEY,activeThemeId);applyThemeInPlace();closeSheet(themeDialog)};
 themeDialog.addEventListener('pointerdown',event=>{themeDialogBackdropPressed=event.target===themeDialog});
-themeDialog.addEventListener('click',event=>{if(themeDialogBackdropPressed&&event.target===themeDialog)themeDialog.close();themeDialogBackdropPressed=false});
+themeDialog.addEventListener('click',event=>{if(themeDialogBackdropPressed&&event.target===themeDialog)closeSheet(themeDialog);themeDialogBackdropPressed=false});
+[tempItemDialog,themeDialog].forEach(sheet=>sheet.addEventListener('cancel',event=>{event.preventDefault();closeSheet(sheet)}));
 function status(){if(view!=='check')return;clearTimeout(completionPending);completionPending=null;const ids=[...active.items,...temporary.map(item=>item.id)],total=ids.length,current=confirmed.size,statusElement=document.querySelector('#status');if(total<=12){statusElement.innerHTML=`<span>${total?`已确认 ${current} / ${total} 件`:'还没有物品，添加一件再检查吧。'}</span>${total?`<div class="check-progress" style="--progress-count:${total}" aria-hidden="true">${ids.map(id=>`<i${confirmed.has(id)?' data-complete':''}></i>`).join('')}</div>`:''}`}else{statusElement.innerHTML=`<span>已确认 ${current} / ${total} 件</span><div class="check-progress check-progress-continuous" aria-hidden="true"><i style="width:${current/total*100}%"></i></div>`}
 if(total&&confirmed.size===total)completionPending=setTimeout(showComplete,180)}
 function showComplete(){
@@ -678,15 +711,16 @@ if(!data.initialSceneColorsV1){
 if(localPreviewMode){for(const template of initialScenes)if(!data.scenes.some(scene=>scene.id===template.id))data.scenes.push({...template,items:initialSceneItemIds(template),misses:{}});const initialIds=new Set(initialScenes.map(scene=>scene.id));data.scenes=[...initialScenes.map(template=>data.scenes.find(scene=>scene.id===template.id)),...data.scenes.filter(scene=>!initialIds.has(scene.id))]}
 data.scenes.forEach((scene,index)=>{
  const template=initialScenes.find(template=>template.id===scene.id);
- scene.themeColor=template?.themeColor||validSceneColor(scene.themeColor)||legacySceneColors[index%legacySceneColors.length];
- scene.colorSlot=colorSlot(scene,index);
+ const slot=colorSlot(scene,index);
+ scene.colorSlot=slot;
+ scene.themeColor=template?.themeColor||validSceneColor(scene.themeColor)||calicoColors[slot];
 });
 persist(data);
 window.addEventListener('popstate',event=>{
  if(dialog.open){dialog.close();forgetContext=null}
  const state=event.state;
- if(state?.lastMinuteView==='historyDetail'&&state.recordId)openHistoryDetail(state.recordId,{push:false});
- else if(state?.lastMinuteView==='history')openHistory({push:false,restore:true});
+ if(state?.lastMinuteView==='historyDetail'&&state.recordId)openHistoryDetail(state.recordId,{push:false,direction:'back'});
+ else if(state?.lastMinuteView==='history')openHistory({push:false,restore:true,direction:'back'});
  else home();
 });
 const historyMatch=location.hash.match(/^#history\/(.+)$/);
@@ -694,25 +728,9 @@ if(historyMatch){const recordId=decodeURIComponent(historyMatch[1]);window.histo
 else if(location.hash==='#history'){window.history.replaceState({lastMinuteView:'history'},'',location.href);openHistory({push:false})}
 else{window.history.replaceState({lastMinuteView:'home'},'',location.pathname+location.search);home()}
 
-async function expandScene(scene){
- if(transitioning)return;transitioning=true;
- const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const origins=new Map([...scene.querySelectorAll('[data-preview]')].map(e=>[e.dataset.preview,e.getBoundingClientRect()]));
- const snapshot=app.cloneNode(true),bounds=app.getBoundingClientRect();
- snapshot.removeAttribute('id');snapshot.setAttribute('aria-hidden','true');snapshot.inert=true;
- Object.assign(snapshot.style,{position:'fixed',left:bounds.left+'px',top:bounds.top+'px',width:bounds.width+'px',height:bounds.height+'px',margin:'0',zIndex:'10',pointerEvents:'none'});
- try{
- enter(scene.dataset.scene);window.scrollTo(0,0);
- if(reduce||!Element.prototype.animate)return;
- app.inert=true;document.body.append(snapshot);
- const animations=[snapshot.animate([{opacity:1},{opacity:0}],{duration:170,fill:'forwards'}).finished];
- for(const card of app.querySelectorAll('.item-card')){
- const start=origins.get(card.dataset.item),end=card.getBoundingClientRect(),scale=card._rect?.scale||1;
- if(start)animations.push(card.animate([{transform:`translate(${(start.x-end.x)}px,${(start.y-end.y)}px) scale(${scale*start.width/end.width},${scale*start.height/end.height})`},{transform:`scale(${scale})`}],{duration:280,easing:'cubic-bezier(.2,.65,.3,1)'}).finished);
- else animations.push(card.animate([{opacity:0},{opacity:1}],{duration:220}).finished);
- }
- await Promise.allSettled(animations);
- }catch{ /* Navigation remains usable if animation APIs fail. */ }
- finally{snapshot.remove();app.inert=false;transitioning=false}
+function expandScene(scene){
+ if(transitioning)return;
+ transitioning=true;enter(scene.dataset.scene);window.scrollTo(0,0);
+ setTimeout(()=>{transitioning=false},300);
 }
 
