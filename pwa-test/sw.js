@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='pwa-test-v4-20261121';
+const VERSION='pwa-v5-20261121';
 const CACHE_NAME=`last-minute-pwa-${VERSION}`;
 const CACHE_PREFIX='last-minute-pwa-';
 const APP_SHELL=[
@@ -50,5 +50,5 @@ self.addEventListener('fetch',event=>{
   event.respondWith(fetch(event.request).then(response=>response.ok?response:Promise.reject()).catch(()=>caches.match('./index.html')));
   return;
  }
- event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));
+ event.respondWith(caches.match(event.request,{ignoreSearch:true}).then(cached=>cached||fetch(event.request)));
 });
