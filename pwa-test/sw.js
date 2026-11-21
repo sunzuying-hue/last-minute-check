@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='pwa-test-v3-20261121';
+const VERSION='pwa-test-v4-20261121';
 const CACHE_NAME=`last-minute-pwa-${VERSION}`;
 const CACHE_PREFIX='last-minute-pwa-';
 const APP_SHELL=[

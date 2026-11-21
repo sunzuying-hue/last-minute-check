@@ -728,3 +728,10 @@ main[data-view=edit] #library .custom-plus{
 }
 .pwa-ready[data-visible=true]{opacity:1;transform:translate(-50%,0)}
 @media(display-mode:standalone){body{min-height:100dvh}main{overscroll-behavior-y:none}}
+/* iOS Safari/PWA zooms focused form fields when their computed text size is below 16px. */
+main[data-view=edit] #sceneName,
+main[data-view=edit] #itemSearch,
+#tempItemDialog #tempItemSearch,
+#tempItemDialog #tempItemName,
+#customItemDialog #customItemName,
+textarea{font-size:16px}
